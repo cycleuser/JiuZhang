@@ -32,17 +32,52 @@ class JiuZhangAPI:
 
     def __init__(self, config: Optional[Config] = None):
         self.config = config or Config()
-        self.client = MultiProviderClient(self.config)
-        self.registry = CourseRegistry()
-        self.curriculum = self.registry.build_curriculum()
-        self.lesson_gen = LessonGenerator(self.config)
-        self.research_engine = ResearchEngine(self.config)
-        self.frontier = FrontierResearchAssistant(self.config)
+        self._client = None
+        self._registry = None
+        self._curriculum = None
+        self._lesson_gen = None
+        self._research_engine = None
+        self._frontier = None
         self.open_problems = OpenProblemsDB()
         self.counterexample_finder = CounterexampleFinder()
-        self.conjecture_verifier = ConjectureVerifier()
         self.latex_generator = LaTeXPaperGenerator()
         self.proof_assistant = ProofAssistant()
+
+    @property
+    def client(self) -> MultiProviderClient:
+        if self._client is None:
+            self._client = MultiProviderClient(self.config)
+        return self._client
+
+    @property
+    def registry(self) -> CourseRegistry:
+        if self._registry is None:
+            self._registry = CourseRegistry()
+        return self._registry
+
+    @property
+    def curriculum(self) -> Curriculum:
+        if self._curriculum is None:
+            self._curriculum = self.registry.build_curriculum()
+        return self._curriculum
+
+    @property
+    def lesson_gen(self) -> LessonGenerator:
+        if self._lesson_gen is None:
+            self._lesson_gen = LessonGenerator(self.config)
+        return self._lesson_gen
+
+    @property
+    def research_engine(self) -> ResearchEngine:
+        if self._research_engine is None:
+            self._research_engine = ResearchEngine(self.config)
+        return self._research_engine
+
+    @property
+    def frontier(self) -> FrontierResearchAssistant:
+        if self._frontier is None:
+            self._frontier = FrontierResearchAssistant(self.config)
+        return self._frontier
 
     def learn(self, topic: str, level: str = "elementary") -> ToolResult:
         """Learn a mathematics topic."""
@@ -111,8 +146,8 @@ class JiuZhangAPI:
         self.config.active_provider = provider
         if model:
             self.config.active_model = model
-        self.client = MultiProviderClient(self.config)
-        self.lesson_gen = LessonGenerator(self.config)
+        self._client = MultiProviderClient(self.config)
+        self._lesson_gen = LessonGenerator(self.config)
 
     def save_config(self):
         """Save current configuration."""

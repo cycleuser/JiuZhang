@@ -13,6 +13,15 @@ Research capabilities:
 - Proof assistant
 - LaTeX paper generation
 - Advanced visualizations (3D manifolds, root systems, fractals, etc.)
+
+Math reasoning engine:
+- Specialized prompting (theorem proof, problem solving, symbolic computation)
+- SymPy-backed symbolic verification of LLM outputs
+- Self-consistency checking
+- Conjecture discovery engine (automated pattern finding + counterexample search)
+- SmallMathModel fine-tuning framework (QLoRA / Unsloth / Ollama)
+- Curriculum-organized training data pipeline with SymPy ground truth
+- Math evaluation benchmark (GSM8K-style)
 """
 
 __version__ = "0.0.1"
@@ -28,6 +37,17 @@ from jiuzhang.research.open_problems import OpenProblemsDB
 from jiuzhang.research.counterexamples import CounterexampleFinder, ConjectureVerifier
 from jiuzhang.research.latex_generator import LaTeXPaperGenerator
 from jiuzhang.research.proof_assistant import ProofAssistant, Proof
+from jiuzhang.math_reasoning import MathReasoningEngine, MathReasoningResult
+from jiuzhang.symbolic_verify import verify_equation, verify_derivative, verify_integral, verify_solution
+from jiuzhang.conjecture_engine import ConjectureEngine
+from jiuzhang.math_benchmark import MathBenchmark
+from jiuzhang.curriculum_pipeline import CurriculumDataPipeline
+from jiuzhang.code_interpreter import CodeInterpreter, CodeExecutionResult
+from jiuzhang.rejection_sampling import RejectionSampler
+from jiuzhang.self_correction_generator import SelfCorrectionDataGenerator
+from jiuzhang.step_verifier import StepByStepVerifier
+from jiuzhang.distillation_pipeline import DistillationPipeline, DistilledSample, DistillationResult
+from jiuzhang.low_vram_training import LowVRAMConfig, LowVRAMTrainer
 
 __all__ = [
     "__version__",
@@ -43,4 +63,23 @@ __all__ = [
     "LaTeXPaperGenerator",
     "ProofAssistant",
     "Proof",
+    "MathReasoningEngine",
+    "MathReasoningResult",
+    "verify_equation",
+    "verify_derivative",
+    "verify_integral",
+    "verify_solution",
+    "ConjectureEngine",
+    "MathBenchmark",
+    "CurriculumDataPipeline",
+    "CodeInterpreter",
+    "CodeExecutionResult",
+    "RejectionSampler",
+    "SelfCorrectionDataGenerator",
+    "StepByStepVerifier",
+    "DistillationPipeline",
+    "DistilledSample",
+    "DistillationResult",
+    "LowVRAMConfig",
+    "LowVRAMTrainer",
 ]

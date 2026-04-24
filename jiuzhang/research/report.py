@@ -92,9 +92,9 @@ class ResearchReportGenerator:
         # Section 4: Experiments
         if research_result.experiments:
             parts.append(
-                "## 实验设计与代码\n\n"
+                "## 4. 实验设计与代码\n\n"
                 if language == "zh"
-                else "## Experiment Design & Code\n\n"
+                else "## 4. Experiment Design & Code\n\n"
             )
             for i, exp in enumerate(research_result.experiments, 1):
                 parts.append(f"### 实验 {i}\n\n")

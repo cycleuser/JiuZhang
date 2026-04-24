@@ -53,6 +53,15 @@ dev = [
     "build>=1.0",
     "twine>=4.0",
 ]
+train = [
+    "modelscope>=1.9",
+    "unsloth",
+    "peft>=0.4",
+    "trl>=0.7",
+    "datasets>=2.14",
+    "bitsandbytes>=0.41",
+    "accelerate>=0.24",
+]
 
 [project.scripts]
 jiuzhang = "jiuzhang.cli:main"
@@ -75,6 +84,8 @@ jiuzhang = [
     "static/**/*",
     "courses/**/*.json",
     "courses/**/*.yaml",
+    "i18n/data/*.json",
+    "research/data/*.json",
 ]
 
 [tool.pytest.ini_options]

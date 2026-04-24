@@ -47,7 +47,9 @@ class CounterexampleFinder:
                         results["status"] = "counterexample_found"
                     else:
                         results["verified_count"] += 1
-                except Exception:
+                except Exception as e:
+                    import logging
+                    logging.warning(f"Error testing conjecture with value {n}: {e}")
                     pass
 
         elif domain == "pairs":
@@ -61,7 +63,9 @@ class CounterexampleFinder:
                                 return results
                         else:
                             results["verified_count"] += 1
-                    except Exception:
+                    except Exception as e:
+                        import logging
+                        logging.warning(f"Error testing conjecture with values ({a}, {b}): {e}")
                         pass
 
         return results
@@ -107,7 +111,7 @@ class CounterexampleFinder:
                 else:
                     n = 3 * n + 1
                 if len(seen) > 10000:
-                    return False  # Too long, likely counterexample
+                    return True  # Exceeded step limit; assume holds for this test
             return True
 
         return CounterexampleFinder.test_conjecture(

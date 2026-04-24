@@ -13,6 +13,8 @@ Comprehensive knowledge base for cutting-edge mathematical research:
 - Dynamical Systems
 """
 
+import json
+import os
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -36,9 +38,38 @@ class FrontierTopic:
     related_topics: list = field(default_factory=list)
 
 
-# Frontier Mathematics Knowledge Base
-FRONTIER_TOPICS = {
-    # Algebraic Geometry
+def _get_data_path(filename: str) -> str:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, "data", filename)
+
+
+def _load_frontier_topics() -> dict:
+    path = _get_data_path("frontier.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        return {
+            k: FrontierTopic(
+                id=v["id"],
+                name=v["name"],
+                name_cn=v["name_cn"],
+                category=v["category"],
+                description=v["description"],
+                description_cn=v["description_cn"],
+                prerequisites=v.get("prerequisites", []),
+                key_concepts=v.get("key_concepts", []),
+                open_problems=v.get("open_problems", []),
+                key_theorems=v.get("key_theorems", []),
+                important_papers=v.get("important_papers", []),
+                arxiv_categories=v.get("arxiv_categories", []),
+                related_topics=v.get("related_topics", []),
+            )
+            for k, v in raw.items()
+        }
+    return _FRONTIER_TOPICS_INLINE
+
+
+_FRONTIER_TOPICS_INLINE = {
     "schemes": FrontierTopic(
         id="schemes",
         name="Schemes",
@@ -110,7 +141,6 @@ FRONTIER_TOPICS = {
         arxiv_categories=["math.AG", "math.AT"],
         related_topics=["stacks", "infinity_categories", "homotopy_theory"],
     ),
-    # Differential Geometry & Topology
     "riemannian_geometry": FrontierTopic(
         id="riemannian_geometry",
         name="Riemannian Geometry",
@@ -190,7 +220,6 @@ FRONTIER_TOPICS = {
             "mirror_symmetry",
         ],
     ),
-    # Category Theory
     "category_theory": FrontierTopic(
         id="category_theory",
         name="Category Theory",
@@ -261,7 +290,6 @@ FRONTIER_TOPICS = {
         arxiv_categories=["math.CT", "math.LO"],
         related_topics=["category_theory", "logic", "algebraic_geometry"],
     ),
-    # Number Theory
     "langlands": FrontierTopic(
         id="langlands",
         name="Langlands Program",
@@ -320,7 +348,6 @@ FRONTIER_TOPICS = {
         arxiv_categories=["math.NT", "math.AG"],
         related_topics=["langlands", "diophantine_geometry", "p_adic_hodge"],
     ),
-    # Representation Theory
     "representation_theory": FrontierTopic(
         id="representation_theory",
         name="Representation Theory",
@@ -373,7 +400,6 @@ FRONTIER_TOPICS = {
             "conformal_field_theory",
         ],
     ),
-    # Mathematical Physics
     "quantum_field_theory": FrontierTopic(
         id="quantum_field_theory",
         name="Quantum Field Theory (Mathematical)",
@@ -422,7 +448,6 @@ FRONTIER_TOPICS = {
         arxiv_categories=["math.AG", "math.SG", "hep-th"],
         related_topics=["symplectic_topology", "algebraic_geometry", "string_theory"],
     ),
-    # Homological Algebra & K-Theory
     "homological_algebra": FrontierTopic(
         id="homological_algebra",
         name="Homological Algebra",
@@ -487,53 +512,61 @@ class FrontierMathKB:
     """
 
     def __init__(self):
-        self._topics = FRONTIER_TOPICS
-        self._categories = self._build_categories()
+        self._topics: Optional[dict] = None
+        self._categories: Optional[dict] = None
+
+    @property
+    def _loaded_topics(self) -> dict:
+        if self._topics is None:
+            self._topics = _load_frontier_topics()
+        return self._topics
 
     def _build_categories(self) -> dict:
         categories = {}
-        for topic_id, topic in self._topics.items():
+        for topic_id, topic in self._loaded_topics.items():
             cat = topic.category
             if cat not in categories:
                 categories[cat] = []
             categories[cat].append(topic_id)
         return categories
 
+    @property
+    def _loaded_categories(self) -> dict:
+        if self._categories is None:
+            self._categories = self._build_categories()
+        return self._categories
+
     def get_topic(self, topic_id: str) -> Optional[FrontierTopic]:
         """Get a frontier topic by ID."""
-        return self._topics.get(topic_id)
+        return self._loaded_topics.get(topic_id)
 
     def get_topics_by_category(self, category: str) -> list:
         """Get all topics in a category."""
-        topic_ids = self._categories.get(category, [])
-        return [self._topics[tid] for tid in topic_ids]
+        topic_ids = self._loaded_categories.get(category, [])
+        return [self._loaded_topics[tid] for tid in topic_ids]
 
     def get_all_categories(self) -> list:
         """Get all frontier categories."""
-        return list(self._categories.keys())
+        return list(self._loaded_categories.keys())
 
     def search(self, query: str, language: str = "zh") -> list:
         """Search frontier topics by keyword."""
         query_lower = query.lower()
         results = []
 
-        for topic_id, topic in self._topics.items():
+        for topic_id, topic in self._loaded_topics.items():
             score = 0
-            # Check name
             if query_lower in topic.name.lower():
                 score += 3
             if query_lower in topic.name_cn:
                 score += 3
-            # Check description
             if query_lower in topic.description.lower():
                 score += 2
             if query_lower in topic.description_cn:
                 score += 2
-            # Check concepts
             for concept in topic.key_concepts:
                 if query_lower in concept.lower():
                     score += 1
-            # Check open problems
             for problem in topic.open_problems:
                 if query_lower in problem.lower():
                     score += 1
@@ -574,14 +607,14 @@ class FrontierMathKB:
         if language == "zh":
             parts.append("# 前沿数学领域概览\n")
             parts.append(
-                f"共收录 {len(self._topics)} 个前沿研究方向，涵盖 {len(self._categories)} 个主要领域。\n"
+                f"共收录 {len(self._loaded_topics)} 个前沿研究方向，涵盖 {len(self._loaded_categories)} 个主要领域。\n"
             )
 
             cat_names = self.get_category_names("zh")
-            for cat, topic_ids in self._categories.items():
+            for cat, topic_ids in self._loaded_categories.items():
                 parts.append(f"\n## {cat_names.get(cat, cat)}\n")
                 for tid in topic_ids:
-                    topic = self._topics[tid]
+                    topic = self._loaded_topics[tid]
                     parts.append(f"### {topic.name_cn} ({topic.name})\n")
                     parts.append(f"{topic.description_cn}\n")
                     if topic.open_problems:
@@ -591,14 +624,14 @@ class FrontierMathKB:
         else:
             parts.append("# Frontier Mathematics Overview\n")
             parts.append(
-                f"Covering {len(self._topics)} research areas across {len(self._categories)} major fields.\n"
+                f"Covering {len(self._loaded_topics)} research areas across {len(self._loaded_categories)} major fields.\n"
             )
 
             cat_names = self.get_category_names("en")
-            for cat, topic_ids in self._categories.items():
+            for cat, topic_ids in self._loaded_categories.items():
                 parts.append(f"\n## {cat_names.get(cat, cat)}\n")
                 for tid in topic_ids:
-                    topic = self._topics[tid]
+                    topic = self._loaded_topics[tid]
                     parts.append(f"### {topic.name}\n")
                     parts.append(f"{topic.description}\n")
                     if topic.open_problems:

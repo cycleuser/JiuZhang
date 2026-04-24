@@ -147,10 +147,10 @@ pip install -e ".[dev]"
 pytest
 
 # Build package
-python publish.py build
+python -m build
 
 # Upload to PyPI
-python publish.py release
+twine upload dist/*
 ```
 
 ## Project Structure

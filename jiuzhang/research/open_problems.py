@@ -3,6 +3,8 @@
 Tracks famous unsolved problems across all major fields.
 """
 
+import json
+import os
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -17,16 +19,45 @@ class OpenProblem:
     field: str
     description: str
     description_cn: str
-    status: str = "open"  # open, partial, solved
+    status: str = "open"
     prize: str = ""
     key_approaches: list = field(default_factory=list)
     related_topics: list = field(default_factory=list)
-    difficulty: str = "extreme"  # moderate, hard, extreme
+    difficulty: str = "extreme"
     year_proposed: int = 0
 
 
-OPEN_PROBLEMS = {
-    # Millennium Prize Problems
+def _get_data_path(filename: str) -> str:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, "data", filename)
+
+
+def _load_open_problems() -> dict:
+    path = _get_data_path("open_problems.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        return {
+            k: OpenProblem(
+                id=v["id"],
+                name=v["name"],
+                name_cn=v["name_cn"],
+                field=v["field"],
+                description=v["description"],
+                description_cn=v["description_cn"],
+                status=v.get("status", "open"),
+                prize=v.get("prize", ""),
+                key_approaches=v.get("key_approaches", []),
+                related_topics=v.get("related_topics", []),
+                difficulty=v.get("difficulty", "extreme"),
+                year_proposed=v.get("year_proposed", 0),
+            )
+            for k, v in raw.items()
+        }
+    return _OPEN_PROBLEMS_INLINE
+
+
+_OPEN_PROBLEMS_INLINE = {
     "riemann_hypothesis": OpenProblem(
         id="riemann_hypothesis",
         name="Riemann Hypothesis",
@@ -133,7 +164,7 @@ OPEN_PROBLEMS = {
     ),
     "poincare_conjecture": OpenProblem(
         id="poincare_conjecture",
-        name="Poincaré Conjecture",
+        name="Poincare Conjecture",
         name_cn="庞加莱猜想",
         field="topology",
         description="Every simply connected closed 3-manifold is homeomorphic to the 3-sphere",
@@ -145,7 +176,6 @@ OPEN_PROBLEMS = {
         difficulty="extreme",
         year_proposed=1904,
     ),
-    # Other Famous Problems
     "goldbach": OpenProblem(
         id="goldbach",
         name="Goldbach's Conjecture",
@@ -193,12 +223,12 @@ OPEN_PROBLEMS = {
         name="ABC Conjecture",
         name_cn="ABC 猜想",
         field="number_theory",
-        description="For any ε>0, there exists K_ε such that for all coprime a+b=c, c < K_ε·rad(abc)^(1+ε)",
-        description_cn="对任意ε>0，存在 K_ε使得对所有互素的 a+b=c，有 c < K_ε·rad(abc)^(1+ε)",
+        description="For any epsilon>0, there exists K_epsilon such that for all coprime a+b=c, c < K_epsilon * rad(abc)^(1+epsilon)",
+        description_cn="对任意epsilon>0，存在 K_epsilon使得对所有互素的 a+b=c，有 c < K_epsilon * rad(abc)^(1+epsilon)",
         status="open",
         prize="",
         key_approaches=[
-            "Inter-universal Teichmüller theory (Mochizuki)",
+            "Inter-universal Teichmuller theory (Mochizuki)",
             "Diophantine approximation",
         ],
         related_topics=["diophantine_equations", "arithmetic_geometry"],
@@ -223,7 +253,7 @@ OPEN_PROBLEMS = {
         difficulty="extreme",
         year_proposed=1994,
     ),
-    "langlands": OpenProblem(
+    "langlands_full": OpenProblem(
         id="langlands_full",
         name="Full Langlands Correspondence",
         name_cn="朗兰兹对应（完整形式）",
@@ -243,7 +273,7 @@ OPEN_PROBLEMS = {
     ),
     "smooth_4d_poincare": OpenProblem(
         id="smooth_4d_poincare",
-        name="Smooth 4D Poincaré Conjecture",
+        name="Smooth 4D Poincare Conjecture",
         name_cn="光滑 4 维庞加莱猜想",
         field="topology",
         description="Every smooth homotopy 4-sphere is diffeomorphic to the standard 4-sphere",
@@ -255,7 +285,7 @@ OPEN_PROBLEMS = {
         difficulty="extreme",
         year_proposed=1960,
     ),
-    "jacobians": OpenProblem(
+    "jacobian_conjecture": OpenProblem(
         id="jacobian_conjecture",
         name="Jacobian Conjecture",
         name_cn="雅可比猜想",
@@ -280,30 +310,36 @@ class OpenProblemsDB:
     """Database of open problems in mathematics."""
 
     def __init__(self):
-        self._problems = OPEN_PROBLEMS
+        self._problems: Optional[dict] = None
+
+    @property
+    def _loaded_problems(self) -> dict:
+        if self._problems is None:
+            self._problems = _load_open_problems()
+        return self._problems
 
     def get_problem(self, problem_id: str) -> Optional[OpenProblem]:
         """Get a problem by ID."""
-        return self._problems.get(problem_id)
+        return self._loaded_problems.get(problem_id)
 
     def get_problems_by_field(self, field: str) -> list:
         """Get all problems in a field."""
-        return [p for p in self._problems.values() if p.field == field]
+        return [p for p in self._loaded_problems.values() if p.field == field]
 
     def get_problems_by_status(self, status: str) -> list:
         """Get problems by status."""
-        return [p for p in self._problems.values() if p.status == status]
+        return [p for p in self._loaded_problems.values() if p.status == status]
 
     def get_problems_by_difficulty(self, difficulty: str) -> list:
         """Get problems by difficulty."""
-        return [p for p in self._problems.values() if p.difficulty == difficulty]
+        return [p for p in self._loaded_problems.values() if p.difficulty == difficulty]
 
     def search(self, query: str, language: str = "zh") -> list:
         """Search problems by keyword."""
         query_lower = query.lower()
         results = []
 
-        for problem in self._problems.values():
+        for problem in self._loaded_problems.values():
             score = 0
             if query_lower in problem.name.lower():
                 score += 3
@@ -328,10 +364,9 @@ class OpenProblemsDB:
         if language == "zh":
             parts.append("# 数学开放问题\n")
             parts.append(
-                f"共收录 {len(self._problems)} 个重要开放问题，按解决状态分类如下。\n"
+                f"共收录 {len(self._loaded_problems)} 个重要开放问题，按解决状态分类如下。\n"
             )
 
-            # Group by status
             for status in ["solved", "partial", "open"]:
                 status_name = {
                     "solved": "已解决",
@@ -357,7 +392,7 @@ class OpenProblemsDB:
         else:
             parts.append("# Open Problems in Mathematics\n")
             parts.append(
-                f"Database of {len(self._problems)} important unsolved problems.\n"
+                f"Database of {len(self._loaded_problems)} important unsolved problems.\n"
             )
 
             for status in ["solved", "partial", "open"]:
@@ -391,4 +426,4 @@ class OpenProblemsDB:
             "birch_swinnerton_dyer",
             "poincare_conjecture",
         ]
-        return [self._problems[pid] for pid in millennium_ids if pid in self._problems]
+        return [self._loaded_problems[pid] for pid in millennium_ids if pid in self._loaded_problems]

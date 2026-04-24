@@ -91,6 +91,14 @@ class Curriculum:
         return self.lessons.get(lesson_id)
 
     def get_prerequisites(self, kp_id: str) -> list:
+        return self._get_prerequisites_recursive(kp_id, set())
+    
+    def _get_prerequisites_recursive(self, kp_id: str, visited: set) -> list:
+        # Prevent infinite recursion from circular dependencies
+        if kp_id in visited:
+            return []
+        visited.add(kp_id)
+        
         kp = self.get_knowledge_point(kp_id)
         if not kp:
             return []
@@ -99,7 +107,7 @@ class Curriculum:
             prereq = self.get_knowledge_point(prereq_id)
             if prereq:
                 result.append(prereq)
-                result.extend(self.get_prerequisites(prereq_id))
+                result.extend(self._get_prerequisites_recursive(prereq_id, visited.copy()))
         return result
 
     def get_learning_path(self, category: str, level: str) -> list:

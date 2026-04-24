@@ -147,10 +147,10 @@ pip install -e ".[dev]"
 pytest
 
 # 构建包
-python publish.py build
+python -m build
 
 # 上传到 PyPI
-python publish.py release
+twine upload dist/*
 ```
 
 ## 项目结构

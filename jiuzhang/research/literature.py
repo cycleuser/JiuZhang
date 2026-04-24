@@ -217,7 +217,9 @@ class LiteratureSearcher:
                     }
                 )
             return papers
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in search_literature: {e}")
             return []
 
     def _parse_arxiv_response(self, xml_data: str) -> list:

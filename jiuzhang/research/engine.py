@@ -221,6 +221,8 @@ class ResearchEngine:
 
     def _save_result(self, result: ResearchResult):
         """Save research result to file."""
+        import logging
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"research_{timestamp}.json"
         filepath = self._output_dir / filename
@@ -241,8 +243,8 @@ class ResearchEngine:
             }
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.warning(f"Failed to save research result to {filepath}: {e}")
 
     def get_research_history(self) -> list:
         """Get list of past research results."""
@@ -260,13 +262,26 @@ class ResearchEngine:
                                 "depth": data.get("metadata", {}).get("depth", ""),
                             }
                         )
-                except Exception:
+                except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                    # Log the error for debugging, but continue processing other files
+                    import logging
+                    logging.warning(f"Failed to load research file {f.name}: {e}")
                     continue
         return results
 
     def load_research(self, filename: str) -> Optional[dict]:
         """Load a past research result."""
+        # Validate filename to prevent path traversal
+        if not self._is_safe_filename(filename):
+            return None
+        
         filepath = self._output_dir / filename
+        # Double-check that resolved path is within output directory
+        try:
+            filepath.resolve().relative_to(self._output_dir.resolve())
+        except ValueError:
+            return None  # Path is outside output directory
+            
         if filepath.exists():
             with open(filepath, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -274,11 +289,36 @@ class ResearchEngine:
 
     def delete_research(self, filename: str) -> bool:
         """Delete a past research result."""
+        # Validate filename to prevent path traversal
+        if not self._is_safe_filename(filename):
+            return False
+        
         filepath = self._output_dir / filename
+        # Double-check that resolved path is within output directory
+        try:
+            filepath.resolve().relative_to(self._output_dir.resolve())
+        except ValueError:
+            return False  # Path is outside output directory
+            
         if filepath.exists():
             filepath.unlink()
             return True
         return False
+    
+    def _is_safe_filename(self, filename: str) -> bool:
+        """Check if filename is safe (no path traversal, only alphanumeric + ._-)."""
+        import re
+        # Only allow alphanumeric, underscore, hyphen, dot, and forward slash for subdirectories
+        # But prevent path traversal patterns
+        if '..' in filename or './' in filename or filename.startswith('/'):
+            return False
+        # Only allow safe characters in filename
+        if not re.match(r'^[a-zA-Z0-9._/-]+$', filename):
+            return False
+        # Must end with .json
+        if not filename.endswith('.json'):
+            return False
+        return True
 
     def get_stats(self) -> dict:
         """Get research statistics."""

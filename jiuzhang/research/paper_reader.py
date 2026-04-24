@@ -144,7 +144,9 @@ class PaperReader:
                 "doi": doi,
                 "journal_ref": journal_ref,
             }
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error parsing paper metadata: {e}")
             return None
 
     def generate_summary(self, paper: dict, language: str = "zh") -> str:

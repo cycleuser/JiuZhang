@@ -5,7 +5,7 @@ Supports Ollama, OpenAI, Anthropic, Alibaba CodingPlan, and any OpenAI-compatibl
 
 import asyncio
 import json
-from typing import Any, AsyncIterator, Optional
+from typing import Any, Iterator, Optional
 
 import requests
 
@@ -154,7 +154,7 @@ class MultiProviderClient:
         model: Optional[str] = None,
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
-    ) -> AsyncIterator[str]:
+    ) -> Iterator[str]:
         provider_config = self._get_provider(provider)
         endpoint = self._get_endpoint(provider_config)
         headers = self._build_headers(provider_config)

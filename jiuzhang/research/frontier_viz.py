@@ -69,7 +69,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -115,7 +117,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -162,7 +166,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -209,7 +215,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -261,7 +269,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -324,7 +334,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -347,10 +359,26 @@ class FrontierVisualizer:
                 angles = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
                 roots = np.array([[np.cos(a), np.sin(a)] for a in angles])
             elif root_type == "B2":
-                # B2 root system (8 roots)
-                angles = np.array([0, 45, 90, 135, 180, 225, 270, 315]) * np.pi / 180
-                roots = np.array([[np.cos(a), np.sin(a)] for a in angles])
-                roots = np.vstack([roots, [[0, 0]]])
+                # B2 root system (8 roots): 4 long roots and 4 short roots
+                # Long roots: (±1,0), (0,±1)  
+                # Short roots: (±1,±1)/sqrt(2)
+                long_roots = np.array([
+                    [1, 0], [-1, 0], [0, 1], [0, -1]
+                ])
+                short_roots = np.array([
+                    [1, 1], [1, -1], [-1, 1], [-1, -1]
+                ]) / np.sqrt(2)
+                roots = np.vstack([long_roots, short_roots])
+            elif root_type == "G2":
+                # G2 root system (12 roots)
+                # 6 long roots and 6 short roots arranged in hexagonal pattern
+                angles_60 = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
+                long_roots = np.array([[np.cos(a), np.sin(a)] for a in angles_60])
+                short_roots = np.array([
+                    [np.cos((angle + 30) * np.pi / 180), np.sin((angle + 30) * np.pi / 180)]
+                    for angle in [0, 60, 120, 180, 240, 300]
+                ]) * np.sqrt(3)/2
+                roots = np.vstack([long_roots, short_roots])
             else:
                 # Default: A2
                 angles = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
@@ -388,7 +416,9 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None
 
     @staticmethod
@@ -465,5 +495,7 @@ class FrontierVisualizer:
             img_base64 = base64.b64encode(buf.read()).decode("utf-8")
             plt.close(fig)
             return img_base64
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error in plot_3d_surface: {e}")
             return None

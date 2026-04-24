@@ -46,6 +46,10 @@ from jiuzhang.courses.advanced.frontier import (
     get_advanced_knowledge_points as get_advanced_kps,
     get_advanced_lesson,
 )
+from jiuzhang.courses.discrete import (
+    get_discrete_kps,
+    get_discrete_lesson,
+)
 
 
 class CourseRegistry:
@@ -57,9 +61,9 @@ class CourseRegistry:
     """
 
     def __init__(self):
-        self._knowledge_points = []
         self._lessons = []
         self._loaded = False
+        self._lesson_index = {}  # Cache for O(1) lookup by ID
 
     def _load_all(self):
         if self._loaded:
@@ -76,6 +80,7 @@ class CourseRegistry:
             *get_calculus_kps(),
             *get_linear_algebra_kps(),
             *get_advanced_kps(),
+            *get_discrete_kps(),
         ]
 
         self._lessons = [
@@ -91,7 +96,11 @@ class CourseRegistry:
             get_calculus_lesson(),
             get_linear_algebra_lesson(),
             get_advanced_lesson(),
+            get_discrete_lesson(),
         ]
+
+        # Build index for fast lookup
+        self._lesson_index = {lesson.id: lesson for lesson in self._lessons}
 
         self._loaded = True
 
@@ -125,8 +134,13 @@ class CourseRegistry:
 
     def get_lesson_by_id(self, lesson_id: str):
         self._load_all()
+        # Use cached index if available
+        if lesson_id in self._lesson_index:
+            return self._lesson_index[lesson_id]
+        # Fallback to linear search and cache the result
         for lesson in self._lessons:
             if lesson.id == lesson_id:
+                self._lesson_index[lesson_id] = lesson
                 return lesson
         return None
 

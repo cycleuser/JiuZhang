@@ -158,8 +158,14 @@ def _find_cjk_fonts():
     return cjk_paths
 
 
+_font_cache: dict = {}
+_configured = False
+
+
 def configure_matplotlib(language: str = "zh", style: str = "default"):
     """Configure matplotlib for proper text rendering in specified language.
+
+    Font manager is only rebuilt on first call; subsequent calls use the cached config.
 
     Args:
         language: Language code
@@ -168,43 +174,51 @@ def configure_matplotlib(language: str = "zh", style: str = "default"):
     Returns:
         Font family name that was configured
     """
-    # Set style first
-    try:
-        plt.style.use(style)
-    except Exception:
-        pass
+    global _configured
 
-    # Find best font
-    font_family = find_best_font(language)
+    if not _configured:
+        # Set style first
+        try:
+            plt.style.use(style)
+        except Exception:
+            pass
 
-    # Configure matplotlib rcParams
-    matplotlib.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.sans-serif": [font_family],
-            "axes.unicode_minus": False,  # Fix minus sign display
-            "figure.dpi": 100,
-            "savefig.dpi": 150,
-            "savefig.bbox": "tight",
-            "savefig.facecolor": "white",
-            "axes.labelsize": 12,
-            "axes.titlesize": 14,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
-            "legend.fontsize": 10,
-            "figure.titlesize": 16,
-            "font.size": 12,
-        }
-    )
+        # Find best font
+        font_family = find_best_font(language)
 
-    # Clear font cache to ensure new fonts are picked up
-    fm._load_fontmanager(try_read_cache=False)
+        # Configure matplotlib rcParams
+        matplotlib.rcParams.update(
+            {
+                "font.family": "sans-serif",
+                "font.sans-serif": [font_family],
+                "axes.unicode_minus": False,  # Fix minus sign display
+                "figure.dpi": 100,
+                "savefig.dpi": 150,
+                "savefig.bbox": "tight",
+                "savefig.facecolor": "white",
+                "axes.labelsize": 12,
+                "axes.titlesize": 14,
+                "xtick.labelsize": 10,
+                "ytick.labelsize": 10,
+                "legend.fontsize": 10,
+                "figure.titlesize": 16,
+                "font.size": 12,
+            }
+        )
 
-    # Suppress font warnings
-    warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
-    warnings.filterwarnings(
-        "ignore", category=UserWarning, module="matplotlib.font_manager"
-    )
+        # Clear font cache to ensure new fonts are picked up
+        fm._load_fontmanager(try_read_cache=False)
+
+        # Suppress font warnings
+        warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, module="matplotlib.font_manager"
+        )
+
+        _configured = True
+        _font_cache["family"] = font_family
+    else:
+        font_family = _font_cache.get("family", "DejaVu Sans")
 
     return font_family
 

@@ -1097,6 +1097,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 class I18n:
     """Internationalization manager for JiuZhang.
 
+    Loads translations from JSON files in the `data/` directory.
+    Falls back to inline TRANSLATIONS dict if JSON files are unavailable.
+
     Usage:
         i18n = I18n()
         i18n.set_language("zh")
@@ -1104,13 +1107,41 @@ class I18n:
     """
 
     def __init__(self, default_language: str = "zh"):
+        self._translations_cache: dict = {}
         self._current_language = default_language
-        self._translations = TRANSLATIONS
+        self._ensure_loaded(default_language)
+
+    def _ensure_loaded(self, language: str):
+        """Lazily load translations from JSON files."""
+        if language in self._translations_cache:
+            return
+        import json
+        from pathlib import Path
+
+        data_dir = Path(__file__).parent / "data"
+        json_path = data_dir / f"{language}.json"
+        if json_path.exists():
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    self._translations_cache[language] = json.load(f)
+                return
+            except Exception:
+                pass
+        if language in TRANSLATIONS:
+            self._translations_cache[language] = TRANSLATIONS[language]
+        else:
+            self._translations_cache[language] = {}
+
+    @property
+    def _translations(self) -> dict:
+        """Access the translations cache."""
+        return self._translations_cache
 
     def set_language(self, language: str):
         """Set the current language."""
         if language in SUPPORTED_LANGUAGES:
             self._current_language = language
+            self._ensure_loaded(language)
         else:
             raise ValueError(
                 f"Unsupported language: {language}. Supported: {list(SUPPORTED_LANGUAGES.keys())}"
@@ -1122,10 +1153,10 @@ class I18n:
 
     def t(self, key: str, default: Optional[str] = None) -> str:
         """Translate a key to the current language."""
-        translations = self._translations.get(self._current_language, {})
-        return translations.get(
-            key, default or self._translations.get("en", {}).get(key, key)
-        )
+        self._ensure_loaded(self._current_language)
+        translations = self._translations_cache.get(self._current_language, {})
+        fallback = self._translations_cache.get("en", {})
+        return translations.get(key, fallback.get(key, default or key))
 
     def get_supported_languages(self) -> dict:
         """Get all supported languages."""
@@ -1138,7 +1169,8 @@ class I18n:
 
     def get_all_translations(self, key: str) -> dict:
         """Get translation of a key in all languages."""
-        return {
-            lang: self._translations.get(lang, {}).get(key, key)
-            for lang in SUPPORTED_LANGUAGES
-        }
+        result = {}
+        for lang in SUPPORTED_LANGUAGES:
+            self._ensure_loaded(lang)
+            result[lang] = self._translations_cache.get(lang, {}).get(key, key)
+        return result
