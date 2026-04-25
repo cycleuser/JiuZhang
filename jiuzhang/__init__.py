@@ -48,6 +48,14 @@ from jiuzhang.self_correction_generator import SelfCorrectionDataGenerator
 from jiuzhang.step_verifier import StepByStepVerifier
 from jiuzhang.distillation_pipeline import DistillationPipeline, DistilledSample, DistillationResult
 from jiuzhang.low_vram_training import LowVRAMConfig, LowVRAMTrainer
+from jiuzhang.math_extractor import (
+    MathKnowledgeExtractor,
+    LocalModelExtractor,
+    MathKnowledgeExtractor,
+    GGUFModelInfo,
+    ExtractionResult,
+    SUPPORTED_1B_MODELS,
+)
 
 __all__ = [
     "__version__",
@@ -82,4 +90,9 @@ __all__ = [
     "DistillationResult",
     "LowVRAMConfig",
     "LowVRAMTrainer",
+    "MathKnowledgeExtractor",
+    "LocalModelExtractor",
+    "GGUFModelInfo",
+    "ExtractionResult",
+    "SUPPORTED_1B_MODELS",
 ]
