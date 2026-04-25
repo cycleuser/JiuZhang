@@ -208,3 +208,15 @@ __marimo__/
 .DS_Store
 /test
 /jiuzhang-math-0.8b
+
+# ════════════════════════════════════════════
+#  JiuZhang 训练输出 & 日志（大文件，不追踪）
+# ════════════════════════════════════════════
+outputs/
+archive/old-training-logs/
+
+# MLX LoRA 适配器文件
+*.safetensors
+
+# 训练指标日志
+metrics.jsonl
