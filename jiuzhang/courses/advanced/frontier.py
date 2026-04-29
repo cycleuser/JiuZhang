@@ -152,32 +152,34 @@ F(ω) = ∫ f(t)e^(-iωt) dt
             {
                 "title": "Fourier Series Demo",
                 "title_cn": "傅里叶级数演示",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-# 方波的傅里叶级数近似
-def square_wave_fourier(x, n_terms):
-    result = np.zeros_like(x)
-    for n in range(1, n_terms + 1, 2):
-        result += (4 / (n * np.pi)) * np.sin(n * x)
-    return result
+class FourierSeriesDemo(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2 * np.pi, 2 * np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=4,
+        ).add_coordinates()
+        self.add(axes)
 
-x = np.linspace(-2*np.pi, 2*np.pi, 1000)
+        def square_wave_fourier(x, n_terms):
+            result = np.zeros_like(x)
+            for n in range(1, n_terms + 1, 2):
+                result += (4 / (n * np.pi)) * np.sin(n * x)
+            return result
 
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-terms = [1, 3, 7, 21]
+        terms = [1, 3, 7, 21]
+        colors = [BLUE, RED, GREEN, ORANGE]
 
-for i, n in enumerate(terms):
-    ax = axes[i // 2, i % 2]
-    y = square_wave_fourier(x, n)
-    ax.plot(x, y, linewidth=1.5)
-    ax.set_title(f'{n} 项')
-    ax.set_ylim(-1.5, 1.5)
-    ax.grid(True, alpha=0.3)
+        for n, color in zip(terms, colors):
+            curve = axes.plot(lambda x: square_wave_fourier(x, n), color=color)
+            label = MathTex(f"n={n}", font_size=24).to_edge(UR).shift(DOWN * 0.3 * terms.index(n))
+            self.add(curve)
 
-plt.suptitle('方波的傅里叶级数近似')
-plt.tight_layout()
-plt.show()""",
+        title = Text("方波的傅里叶级数近似", font_size=36).to_edge(UP)
+        self.add(title)""",
             },
             {
                 "title": "Group Theory Demo",

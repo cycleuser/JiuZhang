@@ -131,26 +131,43 @@ print(f"1/3 = {float(a):.4f}")  # 0.3333""",
             {
                 "title": "Fraction Visualization",
                 "title_cn": "分数可视化",
-                "code": """import matplotlib.pyplot as plt
-import numpy as np
+                "code": """from manim import *
 
-# 饼图展示分数
-fig, ax = plt.subplots(figsize=(6, 6))
+class FractionVisualization(Scene):
+    def construct(self):
+        fractions = [(1, 2), (1, 3), (1, 4), (1, 6)]
+        labels = ['1/2', '1/3', '1/4', '1/6']
+        colors = [RED, TEAL, BLUE, GREEN]
 
-fractions = [(1, 2), (1, 3), (1, 4), (1, 6)]
-labels = ['1/2', '1/3', '1/4', '1/6']
-colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+        pies = VGroup()
+        for i, (num, den) in enumerate(fractions):
+            pie = VGroup()
+            full_angle = 2 * np.pi
+            filled_angle = full_angle * num / den
+            sector = Sector(
+                outer_radius=1.2,
+                start_angle=90 * DEGREES,
+                angle=-filled_angle,
+                fill_color=colors[i],
+                fill_opacity=0.7,
+                stroke_color=WHITE,
+            )
+            remaining = Sector(
+                outer_radius=1.2,
+                start_angle=90 * DEGREES - filled_angle,
+                angle=-(full_angle - filled_angle),
+                fill_color=GREY,
+                fill_opacity=0.3,
+                stroke_color=WHITE,
+            )
+            pie.add(sector, remaining)
+            label = Text(f"{labels[i]} = {num/den:.0%}", font_size=20).next_to(pie, DOWN, buff=0.3)
+            pie.add(label)
+            pies.add(pie)
 
-for i, (num, den) in enumerate(fractions):
-    ax = plt.subplot(2, 2, i+1)
-    sizes = [num, den - num]
-    ax.pie(sizes, colors=[colors[i], '#E8E8E8'],
-           startangle=90, counterclock=False)
-    ax.set_title(f'{labels[i]} = {num/den:.2%}')
-
-plt.suptitle('分数可视化 (Fraction Visualization)')
-plt.tight_layout()
-plt.show()""",
+        pies.arrange_in_grid(rows=2, cols=2, buff=1)
+        title = Text("分数可视化", font_size=36).to_edge(UP)
+        self.add(pies, title)""",
             },
         ],
         estimated_minutes=50,

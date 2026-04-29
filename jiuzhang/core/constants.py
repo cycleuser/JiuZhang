@@ -54,7 +54,7 @@ COURSE_CATEGORY_NAMES_CN = {
 }
 
 # Visualization backends
-VIZ_BACKENDS = ["matplotlib", "pyqtgraph", "web", "tui"]
+VIZ_BACKENDS = ["manim", "pyqtgraph", "web", "tui"]
 
 # Knowledge point status
 KNOWLEDGE_STATUS = [

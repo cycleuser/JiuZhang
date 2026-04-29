@@ -1,24 +1,48 @@
 """Advanced Visualization for Frontier Mathematics.
 
-3D plots, manifolds, spectral sequences, and other advanced visualizations.
-Uses automatic font detection for proper multi-language support.
+3D surfaces, manifolds, spectral sequences, and other advanced visualizations.
+Uses manim for high-quality mathematical animations.
 """
 
 import numpy as np
 from typing import Optional
-import io
-import base64
-import matplotlib
+import os
+import tempfile
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from manim import (
+    Scene,
+    ThreeDScene,
+    ThreeDAxes,
+    Surface,
+    NumberPlane,
+    Arrow,
+    Dot,
+    VGroup,
+    Text,
+    MathTex,
+    ImageMobject,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    ORIGIN,
+    BLUE,
+    RED,
+    GREEN,
+    YELLOW,
+    WHITE,
+    PI,
+    DEGREES,
+    Create,
+    Write,
+)
 
-from jiuzhang.visualization.font_config import configure_matplotlib
+from jiuzhang.visualization.font_config import configure_manim, get_manim_font
+from jiuzhang.math_engine.visualizer import _render_scene
 
 
 class FrontierVisualizer:
-    """Advanced visualizations for frontier mathematics."""
+    """Advanced visualizations for frontier mathematics using manim."""
 
     @staticmethod
     def plot_3d_surface(
@@ -30,7 +54,7 @@ class FrontierVisualizer:
         cmap="viridis",
         language="zh",
     ) -> Optional[str]:
-        """Plot a 3D surface.
+        """Plot a 3D surface using manim.
 
         Args:
             func: Function f(x, y)
@@ -38,37 +62,42 @@ class FrontierVisualizer:
             y_range: y range tuple
             resolution: Grid resolution
             title: Plot title
-            cmap: Colormap
+            cmap: Colormap name (manim uses fill_color instead)
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            x = np.linspace(x_range[0], x_range[1], resolution)
-            y = np.linspace(y_range[0], y_range[1], resolution)
-            X, Y = np.meshgrid(x, y)
-            Z = func(X, Y)
+            configure_manim(language)
+            font = get_manim_font(language)
 
-            fig = plt.figure(figsize=(10, 8))
-            ax = fig.add_subplot(111, projection="3d")
-            surf = ax.plot_surface(
-                X, Y, Z, cmap=cmap, alpha=0.8, linewidth=0, antialiased=True
-            )
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.set_zlabel("z")
-            ax.set_title(title)
-            fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10)
-            plt.tight_layout()
+            class SurfaceScene(ThreeDScene):
+                def construct(self_inner):
+                    self_inner.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    axes = ThreeDAxes(
+                        x_range=[x_range[0], x_range[1], 1],
+                        y_range=[y_range[0], y_range[1], 1],
+                        z_range=[-5, 5, 1],
+                    )
+                    self_inner.add(axes)
+
+                    surface = Surface(
+                        lambda u, v: axes.c2p(u, v, func(u, v)),
+                        u_range=[x_range[0], x_range[1]],
+                        v_range=[y_range[0], y_range[1]],
+                        resolution=(resolution // 5, resolution // 5),
+                        fill_opacity=0.8,
+                        fill_color=BLUE,
+                    )
+                    self_inner.add(surface)
+
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add_fixed_in_frame_mobjects(title_text)
+
+            path = _render_scene(SurfaceScene)
+            return path
         except Exception as e:
             import logging
             logging.warning(f"Error in plot_3d_surface: {e}")
@@ -78,7 +107,7 @@ class FrontierVisualizer:
     def plot_torus(
         major_radius=3, minor_radius=1, resolution=50, language="zh"
     ) -> Optional[str]:
-        """Plot a torus (donut shape).
+        """Plot a torus (donut shape) using manim.
 
         Args:
             major_radius: Distance from center of tube to center of torus
@@ -87,44 +116,46 @@ class FrontierVisualizer:
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            u = np.linspace(0, 2 * np.pi, resolution)
-            v = np.linspace(0, 2 * np.pi, resolution)
-            U, V = np.meshgrid(u, v)
+            configure_manim(language)
+            font = get_manim_font(language)
 
-            X = (major_radius + minor_radius * np.cos(V)) * np.cos(U)
-            Y = (major_radius + minor_radius * np.cos(V)) * np.sin(U)
-            Z = minor_radius * np.sin(V)
+            R, r = major_radius, minor_radius
 
-            fig = plt.figure(figsize=(10, 8))
-            ax = fig.add_subplot(111, projection="3d")
-            ax.plot_surface(
-                X, Y, Z, cmap="coolwarm", alpha=0.8, linewidth=0, antialiased=True
-            )
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.set_zlabel("z")
-            ax.set_title("Torus (\u73af\u9762)" if language == "zh" else "Torus")
-            ax.set_box_aspect([1, 1, 0.5])
-            plt.tight_layout()
+            class TorusScene(ThreeDScene):
+                def construct(self_inner):
+                    self_inner.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    torus = Surface(
+                        lambda u, v: np.array([
+                            (R + r * np.cos(v)) * np.cos(u),
+                            (R + r * np.cos(v)) * np.sin(u),
+                            r * np.sin(v),
+                        ]),
+                        u_range=[0, 2 * PI],
+                        v_range=[0, 2 * PI],
+                        resolution=(resolution // 3, resolution // 3),
+                        fill_opacity=0.8,
+                        fill_color=BLUE,
+                    )
+                    self_inner.add(torus)
+
+                    title = "环面 (Torus)" if language == "zh" else "Torus"
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add_fixed_in_frame_mobjects(title_text)
+
+            path = _render_scene(TorusScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_torus: {e}")
             return None
 
     @staticmethod
     def plot_mobius_strip(width=2, resolution=100, language="zh") -> Optional[str]:
-        """Plot a Möbius strip.
+        """Plot a Möbius strip using manim.
 
         Args:
             width: Width of the strip
@@ -132,92 +163,87 @@ class FrontierVisualizer:
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            u = np.linspace(0, 2 * np.pi, resolution)
-            v = np.linspace(-1, 1, resolution // 2)
-            U, V = np.meshgrid(u, v)
+            configure_manim(language)
+            font = get_manim_font(language)
+            w = width / 2
 
-            X = (1 + V * np.cos(U / 2)) * np.cos(U)
-            Y = (1 + V * np.cos(U / 2)) * np.sin(U)
-            Z = V * np.sin(U / 2)
+            class MobiusScene(ThreeDScene):
+                def construct(self_inner):
+                    self_inner.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
 
-            fig = plt.figure(figsize=(10, 8))
-            ax = fig.add_subplot(111, projection="3d")
-            ax.plot_surface(
-                X, Y, Z, cmap="plasma", alpha=0.9, linewidth=0, antialiased=True
-            )
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.set_zlabel("z")
-            ax.set_title(
-                "M\u00f6bius Strip (\u83ab\u6bd4\u4e4c\u65af\u5e26)"
-                if language == "zh"
-                else "Möbius Strip"
-            )
-            ax.set_box_aspect([1, 1, 0.5])
-            plt.tight_layout()
+                    mobius = Surface(
+                        lambda u, v: np.array([
+                            (1 + v * np.cos(u / 2)) * np.cos(u),
+                            (1 + v * np.cos(u / 2)) * np.sin(u),
+                            v * np.sin(u / 2),
+                        ]),
+                        u_range=[0, 2 * PI],
+                        v_range=[-0.5, 0.5],
+                        resolution=(resolution // 3, resolution // 6),
+                        fill_opacity=0.9,
+                        fill_color=YELLOW,
+                    )
+                    self_inner.add(mobius)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    title = "莫比乌斯带 (Möbius Strip)" if language == "zh" else "Möbius Strip"
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add_fixed_in_frame_mobjects(title_text)
+
+            path = _render_scene(MobiusScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_mobius_strip: {e}")
             return None
 
     @staticmethod
     def plot_klein_bottle(resolution=50, language="zh") -> Optional[str]:
-        """Plot a Klein bottle (figure-8 immersion).
+        """Plot a Klein bottle (figure-8 immersion) using manim.
 
         Args:
             resolution: Grid resolution
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            u = np.linspace(0, 2 * np.pi, resolution)
-            v = np.linspace(0, 2 * np.pi, resolution)
-            U, V = np.meshgrid(u, v)
+            configure_manim(language)
+            font = get_manim_font(language)
 
-            r = 3 * (1 + 0.3 * np.cos(U))
-            X = r * np.cos(V)
-            Y = r * np.sin(V)
-            Z = 2 * np.sin(U) + np.sin(V) * np.cos(U)
+            class KleinBottleScene(ThreeDScene):
+                def construct(self_inner):
+                    self_inner.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
 
-            fig = plt.figure(figsize=(10, 8))
-            ax = fig.add_subplot(111, projection="3d")
-            ax.plot_surface(
-                X, Y, Z, cmap="viridis", alpha=0.8, linewidth=0, antialiased=True
-            )
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.set_zlabel("z")
-            ax.set_title(
-                "Klein Bottle (\u514b\u83b1\u56e0\u74f6)"
-                if language == "zh"
-                else "Klein Bottle"
-            )
-            ax.set_box_aspect([1, 1, 0.5])
-            plt.tight_layout()
+                    def klein_func(u, v):
+                        r_val = 3 * (1 + 0.3 * np.cos(u))
+                        x = r_val * np.cos(v)
+                        y = r_val * np.sin(v)
+                        z = 2 * np.sin(u) + np.sin(v) * np.cos(u)
+                        return np.array([x, y, z])
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    klein = Surface(
+                        klein_func,
+                        u_range=[0, 2 * PI],
+                        v_range=[0, 2 * PI],
+                        resolution=(resolution // 3, resolution // 3),
+                        fill_opacity=0.8,
+                        fill_color=BLUE,
+                    )
+                    self_inner.add(klein)
+
+                    title = "克莱因瓶 (Klein Bottle)" if language == "zh" else "Klein Bottle"
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add_fixed_in_frame_mobjects(title_text)
+
+            path = _render_scene(KleinBottleScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_klein_bottle: {e}")
             return None
 
     @staticmethod
@@ -230,7 +256,7 @@ class FrontierVisualizer:
         title="Vector Field",
         language="zh",
     ) -> Optional[str]:
-        """Plot a 2D vector field.
+        """Plot a 2D vector field using manim.
 
         Args:
             func_x: Function for x-component
@@ -242,36 +268,51 @@ class FrontierVisualizer:
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            x = np.linspace(x_range[0], x_range[1], grid_size)
-            y = np.linspace(y_range[0], y_range[1], grid_size)
-            X, Y = np.meshgrid(x, y)
-            U = func_x(X, Y)
-            V = func_y(X, Y)
+            configure_manim(language)
+            font = get_manim_font(language)
 
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.quiver(
-                X, Y, U, V, np.sqrt(U**2 + V**2), cmap="plasma", scale=30, width=0.003
-            )
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.set_title(title)
-            ax.set_aspect("equal")
-            ax.grid(True, alpha=0.3)
-            plt.tight_layout()
+            class VectorFieldScene(Scene):
+                def construct(self_inner):
+                    x_vals = np.linspace(x_range[0], x_range[1], grid_size)
+                    y_vals = np.linspace(y_range[0], y_range[1], grid_size)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    axes = NumberPlane(
+                        x_range=[x_range[0], x_range[1], 0.5],
+                        y_range=[y_range[0], y_range[1], 0.5],
+                        background_line_style={"stroke_opacity": 0.3},
+                    )
+                    self_inner.add(axes)
+
+                    arrows = VGroup()
+                    for xi in x_vals[::2]:
+                        for yi in y_vals[::2]:
+                            vx = func_x(xi, yi)
+                            vy = func_y(xi, yi)
+                            mag = np.sqrt(vx**2 + vy**2)
+                            if mag > 0.01:
+                                scale = min(0.3, 0.3 / mag)
+                                arrow = Arrow(
+                                    start=axes.c2p(xi, yi),
+                                    end=axes.c2p(xi + vx * scale, yi + vy * scale),
+                                    buff=0,
+                                    color=BLUE,
+                                    stroke_width=2,
+                                )
+                                arrows.add(arrow)
+
+                    self_inner.add(arrows)
+
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add(title_text)
+
+            path = _render_scene(VectorFieldScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_vector_field: {e}")
             return None
 
     @staticmethod
@@ -283,7 +324,7 @@ class FrontierVisualizer:
         title="Complex Function",
         language="zh",
     ) -> Optional[str]:
-        """Plot a complex function using domain coloring.
+        """Plot a complex function using domain coloring with manim.
 
         Args:
             func: Complex function f(z)
@@ -294,131 +335,132 @@ class FrontierVisualizer:
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            x = np.linspace(x_range[0], x_range[1], resolution)
-            y = np.linspace(y_range[0], y_range[1], resolution)
-            X, Y = np.meshgrid(x, y)
-            Z = X + 1j * Y
+            configure_manim(language)
+            font = get_manim_font(language)
 
-            W = func(Z)
+            class ComplexFunctionScene(Scene):
+                def construct(self_inner):
+                    axes = NumberPlane(
+                        x_range=[x_range[0], x_range[1]],
+                        y_range=[y_range[0], y_range[1]],
+                        background_line_style={"stroke_opacity": 0.2},
+                    )
+                    self_inner.add(axes)
 
-            # Domain coloring
-            hue = np.angle(W) / (2 * np.pi)
-            hue = (hue + 1) % 1
-            saturation = np.ones_like(hue)
-            value = np.clip(np.abs(W), 0, 10) / 10
+                    x = np.linspace(x_range[0], x_range[1], min(resolution // 2, 80))
+                    y = np.linspace(y_range[0], y_range[1], min(resolution // 2, 80))
+                    X, Y = np.meshgrid(x, y)
+                    Z = X + 1j * Y
+                    W = func(Z)
 
-            import matplotlib.colors as mcolors
+                    from manim import ImageMobject
+                    from PIL import Image as PILImage
 
-            hsv = np.stack([hue, saturation, value], axis=-1)
-            rgb = mcolors.hsv_to_rgb(hsv)
+                    hue = (np.angle(W) / (2 * np.pi) + 1) % 1
+                    saturation = np.ones_like(hue) * 0.8
+                    value = np.clip(np.abs(W) / np.max(np.abs(W) + 1e-10), 0, 1)
+                    value = 1 - 1.0 / (1 + value * 3)
 
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.imshow(
-                rgb,
-                extent=[x_range[0], x_range[1], y_range[0], y_range[1]],
-                origin="lower",
-                aspect="equal",
-            )
-            ax.set_xlabel("Re(z)")
-            ax.set_ylabel("Im(z)")
-            ax.set_title(title)
-            plt.tight_layout()
+                    import colorsys
+                    rgb_array = np.zeros((len(y), len(x), 3))
+                    for i in range(len(y)):
+                        for j in range(len(x)):
+                            r, g, b = colorsys.hsv_to_rgb(hue[i, j], saturation[i, j], value[i, j])
+                            rgb_array[i, j] = [r * 255, g * 255, b * 255]
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    img = PILImage.fromarray(rgb_array.astype(np.uint8))
+                    img_path = os.path.join(tempfile.mkdtemp(), "complex_domain.png")
+                    img.save(img_path)
+
+                    domain_img = ImageMobject(img_path)
+                    domain_img.height = 6
+                    domain_img.move_to(ORIGIN)
+                    self_inner.add(domain_img)
+
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add(title_text)
+
+            path = _render_scene(ComplexFunctionScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_complex_function: {e}")
             return None
 
     @staticmethod
     def plot_root_system(root_type="A2", language="zh") -> Optional[str]:
-        """Plot a root system.
+        """Plot a root system using manim.
 
         Args:
             root_type: Root system type (A2, B2, G2)
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            fig, ax = plt.subplots(figsize=(8, 8))
+            configure_manim(language)
+            font = get_manim_font(language)
 
             if root_type == "A2":
-                # A2 root system (6 roots)
                 angles = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
                 roots = np.array([[np.cos(a), np.sin(a)] for a in angles])
             elif root_type == "B2":
-                # B2 root system (8 roots): 4 long roots and 4 short roots
-                # Long roots: (±1,0), (0,±1)  
-                # Short roots: (±1,±1)/sqrt(2)
-                long_roots = np.array([
-                    [1, 0], [-1, 0], [0, 1], [0, -1]
-                ])
-                short_roots = np.array([
-                    [1, 1], [1, -1], [-1, 1], [-1, -1]
-                ]) / np.sqrt(2)
+                long_roots = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+                short_roots = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) / np.sqrt(2)
                 roots = np.vstack([long_roots, short_roots])
             elif root_type == "G2":
-                # G2 root system (12 roots)
-                # 6 long roots and 6 short roots arranged in hexagonal pattern
                 angles_60 = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
                 long_roots = np.array([[np.cos(a), np.sin(a)] for a in angles_60])
                 short_roots = np.array([
-                    [np.cos((angle + 30) * np.pi / 180), np.sin((angle + 30) * np.pi / 180)]
-                    for angle in [0, 60, 120, 180, 240, 300]
-                ]) * np.sqrt(3)/2
+                    [np.cos((a + 30) * np.pi / 180), np.sin((a + 30) * np.pi / 180)]
+                    for a in [0, 60, 120, 180, 240, 300]
+                ]) * np.sqrt(3) / 2
                 roots = np.vstack([long_roots, short_roots])
             else:
-                # Default: A2
                 angles = np.array([0, 60, 120, 180, 240, 300]) * np.pi / 180
                 roots = np.array([[np.cos(a), np.sin(a)] for a in angles])
 
-            ax.quiver(
-                np.zeros(len(roots)),
-                np.zeros(len(roots)),
-                roots[:, 0],
-                roots[:, 1],
-                angles="xy",
-                scale_units="xy",
-                scale=1,
-                color="steelblue",
-                width=0.005,
-            )
+            class RootSystemScene(Scene):
+                def construct(self_inner):
+                    axes = NumberPlane(
+                        x_range=[-1.8, 1.8],
+                        y_range=[-1.8, 1.8],
+                        background_line_style={"stroke_opacity": 0.2},
+                    )
+                    self_inner.add(axes)
 
-            ax.set_xlim(-1.5, 1.5)
-            ax.set_ylim(-1.5, 1.5)
-            ax.set_aspect("equal")
-            ax.grid(True, alpha=0.3)
-            ax.axhline(y=0, color="k", linewidth=0.5)
-            ax.axvline(x=0, color="k", linewidth=0.5)
-            root_name = (
-                f"{root_type} \u6839\u7cfb"
-                if language == "zh"
-                else f"{root_type} Root System"
-            )
-            ax.set_title(root_name)
-            plt.tight_layout()
+                    arrows = VGroup()
+                    for root in roots:
+                        arrow = Arrow(
+                            start=axes.c2p(0, 0),
+                            end=axes.c2p(float(root[0]), float(root[1])),
+                            buff=0,
+                            color=BLUE,
+                            stroke_width=3,
+                        )
+                        arrows.add(arrow)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    self_inner.add(arrows)
+
+                    dots = VGroup(*[
+                        Dot(axes.c2p(float(r[0]), float(r[1])), color=RED, radius=0.06)
+                        for r in roots
+                    ])
+                    self_inner.add(dots)
+
+                    title = f"{root_type} 根系" if language == "zh" else f"{root_type} Root System"
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add(title_text)
+
+            path = _render_scene(RootSystemScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_root_system: {e}")
             return None
 
     @staticmethod
@@ -430,7 +472,7 @@ class FrontierVisualizer:
         max_iter=100,
         language="zh",
     ) -> Optional[str]:
-        """Plot a fractal (Mandelbrot or Julia set).
+        """Plot a fractal (Mandelbrot or Julia set) using manim.
 
         Args:
             mandelbrot: True for Mandelbrot, False for Julia
@@ -441,61 +483,65 @@ class FrontierVisualizer:
             language: Language for font configuration
 
         Returns:
-            Base64 encoded image or None
+            Path to rendered MP4 file or None
         """
         try:
-            configure_matplotlib(language)
-            x = np.linspace(x_range[0], x_range[1], resolution)
-            y = np.linspace(y_range[0], y_range[1], resolution)
-            X, Y = np.meshgrid(x, y)
-            C = X + 1j * Y
+            configure_manim(language)
+            font = get_manim_font(language)
+
+            res = min(resolution // 2, 200)
+            x = np.linspace(x_range[0], x_range[1], res)
+            y = np.linspace(y_range[0], y_range[1], res)
+            C = x[:, np.newaxis] + 1j * y[np.newaxis, :]
 
             if mandelbrot:
                 Z = np.zeros_like(C)
             else:
                 Z = C.copy()
-                C = -0.4 + 0.6j  # Julia set parameter
+                C = -0.4 + 0.6j
 
             M = np.zeros(C.shape, dtype=int)
-
             for i in range(max_iter):
                 mask = np.abs(Z) < 2
                 Z[mask] = Z[mask] ** 2 + C[mask]
                 M[mask] = i
 
-            fig, ax = plt.subplots(figsize=(10, 8))
-            ax.imshow(
-                M,
-                extent=[x_range[0], x_range[1], y_range[0], y_range[1]],
-                cmap="magma",
-                origin="lower",
-                aspect="equal",
-            )
-            ax.set_xlabel("Re(z)")
-            ax.set_ylabel("Im(z)")
-            title = (
-                (
-                    "Mandelbrot Set (\u66fc\u5fb7\u535a\u96c6\u5408)"
-                    if language == "zh"
-                    else "Mandelbrot Set"
-                )
-                if mandelbrot
-                else (
-                    "Julia Set (\u6731\u5229\u4e9a\u96c6\u5408)"
-                    if language == "zh"
-                    else "Julia Set"
-                )
-            )
-            ax.set_title(title)
-            plt.tight_layout()
+            class FractalScene(Scene):
+                def construct(self_inner):
+                    from manim import ImageMobject
+                    from PIL import Image as PILImage
 
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig)
-            return img_base64
+                    hue = (M.T / max_iter * 0.7 + 0.8) % 1.0
+                    sat = np.ones_like(hue)
+                    val = np.ones_like(hue) * 0.9
+                    val[M.T == max_iter] = 0
+
+                    import colorsys
+                    rgb_array = np.zeros((*hue.shape, 3))
+                    for i in range(hue.shape[0]):
+                        for j in range(hue.shape[1]):
+                            r, g, b = colorsys.hsv_to_rgb(hue[i, j], sat[i, j], val[i, j])
+                            rgb_array[i, j] = [r * 255, g * 255, b * 255]
+
+                    img = PILImage.fromarray(rgb_array.astype(np.uint8))
+                    img_path = os.path.join(tempfile.mkdtemp(), "fractal.png")
+                    img.save(img_path)
+
+                    fractal_img = ImageMobject(img_path)
+                    fractal_img.height = 6
+                    fractal_img.move_to(ORIGIN)
+                    self_inner.add(fractal_img)
+
+                    if mandelbrot:
+                        title = "曼德博集合 (Mandelbrot Set)" if language == "zh" else "Mandelbrot Set"
+                    else:
+                        title = "朱利亚集合 (Julia Set)" if language == "zh" else "Julia Set"
+                    title_text = Text(title, font=font, font_size=28).to_edge(UP)
+                    self_inner.add(title_text)
+
+            path = _render_scene(FractalScene)
+            return path
         except Exception as e:
             import logging
-            logging.warning(f"Error in plot_3d_surface: {e}")
+            logging.warning(f"Error in plot_fractal: {e}")
             return None

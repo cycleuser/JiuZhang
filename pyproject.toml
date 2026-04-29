@@ -33,10 +33,10 @@ dependencies = [
     "rich>=13.0",
     "prompt_toolkit>=3.0",
     "numpy>=1.24",
-    "matplotlib>=3.7",
-    "seaborn>=0.12",
+    "manim>=0.18",
     "sympy>=1.12",
     "scipy>=1.10",
+    "Pillow>=9.0",
 ]
 
 [project.optional-dependencies]

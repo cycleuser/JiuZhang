@@ -1,4 +1,4 @@
-"""Tests for frontier mathematics module."""
+"""Tests for frontier mathematics module (manim-based)."""
 
 import pytest
 from jiuzhang.research.frontier import FrontierMathKB, FrontierTopic

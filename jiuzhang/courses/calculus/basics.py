@@ -184,38 +184,36 @@ print(f"黎曼和 (n=10000): {riemann_sum(f, 0, 1, 10000):.6f}")""",
             {
                 "title": "Derivative Visualization",
                 "title_cn": "导数可视化",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-x = np.linspace(-3, 3, 200)
-y = x**2
-dy = 2*x  # 导数
+class DerivativeVisualization(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-3, 3, 1],
+            y_range=[-2, 10, 2],
+            x_length=6,
+            y_length=5,
+            axis_config={"color": GREY},
+        ).add_coordinates().shift(LEFT * 3)
+        self.add(axes)
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+        func_curve = axes.plot(lambda x: x**2, color=BLUE, x_range=[-3, 3])
+        deriv_curve = axes.plot(lambda x: 2 * x, color=RED, x_range=[-3, 3])
+        self.add(func_curve, deriv_curve)
 
-ax1.plot(x, y, 'b-', label='f(x) = x²', linewidth=2)
-ax1.plot(x, dy, 'r--', label="f'(x) = 2x", linewidth=2)
-ax1.axhline(y=0, color='k', linewidth=0.5)
-ax1.legend()
-ax1.set_title('函数与导数')
-ax1.grid(True, alpha=0.3)
+        func_label = MathTex("f(x) = x^2", color=BLUE, font_size=28).next_to(func_curve, RIGHT).shift(UP * 0.5)
+        deriv_label = MathTex("f'(x) = 2x", color=RED, font_size=28).next_to(deriv_curve, RIGHT).shift(DOWN * 0.5)
+        self.add(func_label, deriv_label)
 
-# 切线演示
-x0 = 1
-y0 = x0**2
-slope = 2*x0
-x_tan = np.linspace(-1, 3, 100)
-y_tan = slope * (x_tan - x0) + y0
+        x0 = 1
+        y0 = x0**2
+        slope = 2 * x0
+        tan_curve = axes.plot(lambda x: slope * (x - x0) + y0, color=ORANGE, x_range=[-1, 3])
+        dot = Dot(axes.c2p(x0, y0), color=ORANGE, radius=0.08)
+        self.add(tan_curve, dot)
 
-ax2.plot(x, y, 'b-', linewidth=2)
-ax2.plot(x_tan, y_tan, 'r--', label=f'切线 (x={x0})')
-ax2.plot(x0, y0, 'ro', markersize=8)
-ax2.set_title('切线斜率 = 导数')
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()""",
+        title = Text("函数、导数与切线", font_size=36).to_edge(UP)
+        self.add(title)""",
             },
         ],
         estimated_minutes=120,

@@ -75,8 +75,8 @@ class LessonGenerator:
         if not include_code:
             return ""
         if language == "zh":
-            return "4. 代码实现 - 用 Python 实现相关数学概念（使用 numpy, sympy, matplotlib）"
-        return "4. Code Implementation - Python implementation using numpy, sympy, matplotlib"
+            return "4. 代码实现 - 用 Python 实现相关数学概念（使用 numpy, sympy, manim）"
+        return "4. Code Implementation - Python implementation using numpy, sympy, manim"
 
     def _get_visualization_section(self, include_viz: bool, language: str) -> str:
         if not include_viz:

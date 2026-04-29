@@ -154,22 +154,29 @@ print(f"自然数的个数: {len(natural_numbers)}")""",
             {
                 "title": "整数数轴",
                 "title_cn": "整数数轴可视化",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-# 创建数轴
-fig, ax = plt.subplots(figsize=(10, 2))
-ax.set_xlim(-6, 6)
-ax.set_ylim(-1, 1)
-ax.axhline(y=0, color='black', linewidth=2)
+class IntegerNumberLine(Scene):
+    def construct(self):
+        number_line = NumberLine(
+            x_range=[-5, 5, 1],
+            length=10,
+            include_numbers=True,
+            font_size=32,
+        ).shift(DOWN * 0.3)
 
-for x in range(-5, 6):
-    ax.plot([x, x], [-0.1, 0.1], color='black')
-    ax.text(x, -0.3, str(x), ha='center', fontsize=10)
+        for x in range(-5, 6):
+            if x < 0:
+                dot = Dot(number_line.n2p(x), color=RED, radius=0.08)
+            elif x > 0:
+                dot = Dot(number_line.n2p(x), color=BLUE, radius=0.08)
+            else:
+                dot = Dot(number_line.n2p(x), color=GREEN, radius=0.1)
+            self.add(dot)
 
-ax.set_title('整数数轴')
-ax.axis('off')
-plt.show()""",
+        self.add(number_line)
+        title = Text("整数数轴", font_size=36).to_edge(UP)
+        self.add(title)""",
             },
         ],
         estimated_minutes=45,

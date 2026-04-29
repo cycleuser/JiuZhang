@@ -190,29 +190,28 @@ print(f"特征向量: \\n{eigenvectors}")""",
             {
                 "title": "Matrix Visualization",
                 "title_cn": "矩阵可视化",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-# 矩阵热力图
-A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+class MatrixVisualization(Scene):
+    def construct(self):
+        A = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 
-fig, ax = plt.subplots(figsize=(6, 5))
-im = ax.imshow(A, cmap='coolwarm', aspect='auto')
+        matrix_mob = Matrix(
+            [[str(A[i][j]) for j in range(3)] for i in range(3)],
+            element_config={"font_size": 36},
+        ).shift(LEFT * 2)
 
-for i in range(3):
-    for j in range(3):
-        ax.text(j, i, f'{A[i,j]}', ha='center', va='center',
-                color='white' if abs(A[i,j]) > 5 else 'black',
-                fontsize=14, fontweight='bold')
+        labels_col = VGroup(*[
+            Text(f"列{c+1}", font_size=20).next_to(matrix_mob.get_columns()[c], UP, buff=0.3)
+            for c in range(3)
+        ])
+        labels_row = VGroup(*[
+            Text(f"行{r+1}", font_size=20).next_to(matrix_mob.get_rows()[r], LEFT, buff=0.3)
+            for r in range(3)
+        ])
 
-ax.set_xticks(range(3))
-ax.set_yticks(range(3))
-ax.set_xticklabels(['列1', '列2', '列3'])
-ax.set_yticklabels(['行1', '行2', '行3'])
-plt.colorbar(im)
-ax.set_title('矩阵热力图')
-plt.tight_layout()
-plt.show()""",
+        title = Text("矩阵热力图", font_size=36).to_edge(UP)
+        self.add(matrix_mob, labels_col, labels_row, title)""",
             },
         ],
         estimated_minutes=100,

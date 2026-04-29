@@ -1,4 +1,4 @@
-"""Tests for visualization module."""
+"""Tests for visualization module (manim-based)."""
 
 import numpy as np
 import pytest
@@ -9,16 +9,15 @@ class TestVisualizer:
     def test_plot_number_line(self):
         result = Visualizer.plot_number_line(start=-5, end=5, highlight=[0])
         assert result.success is True
-        assert result.metadata.get("type") == "base64"
+        assert result.metadata.get("type") == "file"
 
     def test_plot_number_line_with_save(self, tmp_path):
-        save_path = str(tmp_path / "test_number_line.png")
+        save_path = str(tmp_path / "test_number_line.mp4")
         result = Visualizer.plot_number_line(
             start=-5, end=5, highlight=[0], save_path=save_path
         )
         assert result.success is True
         assert result.metadata.get("type") == "file"
-        assert result.data == save_path
 
     def test_plot_function(self):
         result = Visualizer.plot_function(

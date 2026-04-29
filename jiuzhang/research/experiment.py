@@ -6,12 +6,6 @@ result analysis, and comprehensive visualizations.
 
 import numpy as np
 from typing import Optional
-import io
-import base64
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 from jiuzhang.core.config import Config
 from jiuzhang.core.multi_provider_api import MultiProviderClient
@@ -62,65 +56,90 @@ class ExperimentDesigner:
                     "description": "研究傅里叶级数逼近不同函数的收敛速度和吉布斯现象"
                     if language == "zh"
                     else "Study convergence rate and Gibbs phenomenon of Fourier series",
-                    "code": '''import numpy as np
-import matplotlib.pyplot as plt
+                    "code": '''from manim import *
+import numpy as np
 
 def fourier_square_wave(x, n_terms):
-    """方波的傅里叶级数逼近"""
     result = np.zeros_like(x)
     for n in range(1, 2*n_terms, 2):
         result += (4 / (n * np.pi)) * np.sin(n * x)
     return result
 
 def fourier_sawtooth(x, n_terms):
-    """锯齿波的傅里叶级数逼近"""
     result = np.zeros_like(x)
     for n in range(1, n_terms + 1):
         result += (2 * (-1)**(n+1) / (n * np.pi)) * np.sin(n * x)
     return result
 
-x = np.linspace(-2*np.pi, 2*np.pi, 2000)
+class FourierSquareWaveScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=6,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=6,
+        )
+        x_vals = np.linspace(-2*np.pi, 2*np.pi, 2000)
+        for n in [1, 3, 10]:
+            y_vals = fourier_square_wave(x_vals, n)
+            curve = axes.plot_line_graph(x_vals, y_vals, line_color=BLUE)
+            label = Text(f"Square Wave (n={n})").to_edge(UP)
+            self.add(axes, grid, curve, label)
+            self.wait(1)
+            self.remove(curve, label)
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+class FourierSawtoothScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=6,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=6,
+        )
+        x_vals = np.linspace(-2*np.pi, 2*np.pi, 2000)
+        for n in [1, 5, 20]:
+            y_vals = fourier_sawtooth(x_vals, n)
+            curve = axes.plot_line_graph(x_vals, y_vals, line_color=YELLOW)
+            label = Text(f"Sawtooth Wave (n={n})").to_edge(UP)
+            self.add(axes, grid, curve, label)
+            self.wait(1)
+            self.remove(curve, label)
 
-# Square wave convergence
-for i, n in enumerate([1, 3, 10]):
-    ax = axes[0, i]
-    y = fourier_square_wave(x, n)
-    ax.plot(x, y, linewidth=1.5, label=f'n={n}')
-    ax.set_title(f'Square Wave (n={n})')
-    ax.set_ylim(-1.5, 1.5)
-    ax.grid(True, alpha=0.3)
+class FourierConvergenceRateScene(Scene):
+    def construct(self):
+        ns = np.arange(1, 50)
+        errors = []
+        x_test = np.pi / 4
+        for n in ns:
+            approx = fourier_square_wave(np.array([x_test]), n)[0]
+            exact = 1.0
+            errors.append(abs(approx - exact))
+        axes = Axes(
+            x_range=[0, 50, 5],
+            y_range=[0, max(errors)*1.1, max(errors)/5],
+            x_length=10,
+            y_length=6,
+        ).add_coordinates()
+        curve = axes.plot_line_graph(ns, np.array(errors), line_color=BLUE)
+        title = Text("Convergence Rate at x=pi/4").to_edge(UP)
+        x_label = Text("Number of Terms (n)").next_to(axes, DOWN)
+        self.add(axes, curve, title, x_label)
 
-# Sawtooth wave convergence
-for i, n in enumerate([1, 5, 20]):
-    ax = axes[1, i]
-    y = fourier_sawtooth(x, n)
-    ax.plot(x, y, linewidth=1.5, label=f'n={n}')
-    ax.set_title(f'Sawtooth Wave (n={n})')
-    ax.set_ylim(-1.5, 1.5)
-    ax.grid(True, alpha=0.3)
-
-plt.suptitle('Fourier Series Convergence')
-plt.tight_layout()
-plt.show()
-
-# Convergence rate analysis
-ns = np.arange(1, 50)
-errors = []
-x_test = np.pi / 4  # Point away from discontinuity
-for n in ns:
-    approx = fourier_square_wave(np.array([x_test]), n)[0]
-    exact = 1.0  # Square wave value at pi/4
-    errors.append(abs(approx - exact))
-
-plt.figure(figsize=(8, 5))
-plt.semilogy(ns, errors, 'bo-', linewidth=1)
-plt.xlabel('Number of Terms (n)')
-plt.ylabel('Error (log scale)')
-plt.title('Convergence Rate at x=π/4')
-plt.grid(True, alpha=0.3)
-plt.show()''',
+# Render: manim -pql <filename> FourierSquareWaveScene
+# Render: manim -pql <filename> FourierSawtoothScene
+# Render: manim -pql <filename> FourierConvergenceRateScene''',
                     "expected_output": "收敛速度图、吉布斯现象可视化",
                 }
             )
@@ -133,20 +152,18 @@ plt.show()''',
                     "description": "使用 FFT 分析信号的频域特性"
                     if language == "zh"
                     else "Analyze signal frequency characteristics using FFT",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
-# Generate signal
-fs = 1000  # Sampling frequency
+fs = 1000
 t = np.arange(0, 1, 1/fs)
-f1, f2, f3 = 50, 120, 200  # Frequency components
+f1, f2, f3 = 50, 120, 200
 
 signal = (np.sin(2*np.pi*f1*t) +
           0.5*np.sin(2*np.pi*f2*t) +
           0.3*np.sin(2*np.pi*f3*t) +
           0.5*np.random.randn(len(t)))
 
-# FFT
 N = len(signal)
 Y = np.fft.fft(signal)
 P2 = np.abs(Y/N)
@@ -154,22 +171,48 @@ P1 = P2[:N//2]
 P1[1:-1] = 2*P1[1:-1]
 f = fs*np.arange(0, N//2)/N
 
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+class TimeDomainScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[0, t[199], 0.02],
+            y_range=[-3, 3, 1],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[0, t[199], 0.02],
+            y_range=[-3, 3, 1],
+            x_length=10,
+            y_length=5,
+        )
+        curve = axes.plot_line_graph(t[:200], signal[:200], line_color=BLUE)
+        title = Text("Time Domain Signal").to_edge(UP)
+        x_label = Text("Time (s)").next_to(axes, DOWN)
+        self.add(axes, grid, curve, title, x_label)
 
-ax1.plot(t[:200], signal[:200], 'b-', linewidth=0.5)
-ax1.set_title('Time Domain Signal')
-ax1.set_xlabel('Time (s)')
-ax1.grid(True, alpha=0.3)
+class FrequencySpectrumScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[0, 300, 50],
+            y_range=[0, float(P1.max())*1.1, 0.1],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[0, 300, 50],
+            y_range=[0, float(P1.max())*1.1, 0.1],
+            x_length=10,
+            y_length=5,
+        )
+        mask = f <= 300
+        curve = axes.plot_line_graph(f[mask], P1[mask], line_color=RED)
+        title = Text("Frequency Spectrum (FFT)").to_edge(UP)
+        x_label = Text("Frequency (Hz)").next_to(axes, DOWN)
+        y_label = Text("|P1(f)|").next_to(axes, LEFT)
+        self.add(axes, grid, curve, title, x_label, y_label)
 
-ax2.plot(f, P1, 'r-', linewidth=1)
-ax2.set_title('Frequency Spectrum (FFT)')
-ax2.set_xlabel('Frequency (Hz)')
-ax2.set_ylabel('|P1(f)|')
-ax2.grid(True, alpha=0.3)
-ax2.set_xlim(0, 300)
-
-plt.tight_layout()
-plt.show()""",
+# Render: manim -pql <filename> TimeDomainScene
+# Render: manim -pql <filename> FrequencySpectrumScene""",
                     "expected_output": "时域信号图、频域频谱图",
                 }
             )
@@ -184,8 +227,8 @@ plt.show()""",
                     "description": "比较不同数值微分方法的精度和收敛性"
                     if language == "zh"
                     else "Compare accuracy and convergence of numerical differentiation methods",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
 def forward_diff(f, x, h):
     return (f(x + h) - f(x)) / h
@@ -211,16 +254,38 @@ for h in hs:
     errors_central.append(abs(central_diff(f, x, h) - f_prime(x)))
     errors_five.append(abs(five_point(f, x, h) - f_prime(x)))
 
-plt.figure(figsize=(10, 6))
-plt.loglog(hs, errors_forward, 'r-', label='Forward Difference O(h)', linewidth=2)
-plt.loglog(hs, errors_central, 'g-', label='Central Difference O(h²)', linewidth=2)
-plt.loglog(hs, errors_five, 'b-', label='Five-Point O(h⁴)', linewidth=2)
-plt.xlabel('Step Size (h)')
-plt.ylabel('Error')
-plt.title('Numerical Derivative Accuracy Comparison')
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.show()""",
+class DerivativeAccuracyScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[1e-10, 1e-1, 1e-2],
+            y_range=[1e-16, 1, 1e-2],
+            x_length=10,
+            y_length=6,
+            x_axis_config={"scaling": LogBase(base=10)},
+            y_axis_config={"scaling": LogBase(base=10)},
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[1e-10, 1e-1, 1e-2],
+            y_range=[1e-16, 1, 1e-2],
+            x_length=10,
+            y_length=6,
+            x_axis_config={"scaling": LogBase(base=10)},
+            y_axis_config={"scaling": LogBase(base=10)},
+        )
+        curve_fwd = axes.plot_line_graph(hs, np.array(errors_forward), line_color=RED)
+        curve_cen = axes.plot_line_graph(hs, np.array(errors_central), line_color=GREEN)
+        curve_fiv = axes.plot_line_graph(hs, np.array(errors_five), line_color=BLUE)
+        labels = VGroup(
+            Text("Forward Difference O(h)", color=RED, font_size=24),
+            Text("Central Difference O(h^2)", color=GREEN, font_size=24),
+            Text("Five-Point O(h^4)", color=BLUE, font_size=24),
+        ).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)
+        title = Text("Numerical Derivative Accuracy Comparison").to_edge(UP)
+        x_label = Text("Step Size (h)").next_to(axes, DOWN)
+        y_label = Text("Error").next_to(axes, LEFT)
+        self.add(axes, grid, curve_fwd, curve_cen, curve_fiv, labels, title, x_label, y_label)
+
+# Render: manim -pql <filename> DerivativeAccuracyScene""",
                     "expected_output": "数值微分精度对比图",
                 }
             )
@@ -235,8 +300,8 @@ plt.show()""",
                     "description": "比较矩形法、梯形法、辛普森法的精度和收敛速度"
                     if language == "zh"
                     else "Compare accuracy and convergence of rectangle, trapezoidal, and Simpson's methods",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 from scipy import integrate
 
 def rectangle_method(f, a, b, n):
@@ -262,16 +327,37 @@ errors_rect = [abs(rectangle_method(f, a, b, n) - exact) for n in ns]
 errors_trap = [abs(trapezoidal_method(f, a, b, n) - exact) for n in ns]
 errors_simp = [abs(simpson_method(f, a, b, n) - exact) for n in ns]
 
-plt.figure(figsize=(10, 6))
-plt.semilogy(ns, errors_rect, 'r-', label='Rectangle O(h)', linewidth=2)
-plt.semilogy(ns, errors_trap, 'g-', label='Trapezoidal O(h²)', linewidth=2)
-plt.semilogy(ns, errors_simp, 'b-', label="Simpson's O(h⁴)", linewidth=2)
-plt.xlabel('Number of Intervals (n)')
-plt.ylabel('Error (log scale)')
-plt.title('Numerical Integration Accuracy Comparison')
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.show()""",
+class IntegrationAccuracyScene(Scene):
+    def construct(self):
+        min_err = min(min(errors_rect), min(errors_trap), min(errors_simp))
+        axes = Axes(
+            x_range=[2, 100, 10],
+            y_range=[min_err*0.5, max(errors_rect)*2, 0.001],
+            x_length=10,
+            y_length=6,
+            y_axis_config={"scaling": LogBase(base=10)},
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[2, 100, 10],
+            y_range=[min_err*0.5, max(errors_rect)*2, 0.001],
+            x_length=10,
+            y_length=6,
+            y_axis_config={"scaling": LogBase(base=10)},
+        )
+        curve_rect = axes.plot_line_graph(ns, np.array(errors_rect), line_color=RED)
+        curve_trap = axes.plot_line_graph(ns, np.array(errors_trap), line_color=GREEN)
+        curve_simp = axes.plot_line_graph(ns, np.array(errors_simp), line_color=BLUE)
+        labels = VGroup(
+            Text("Rectangle O(h)", color=RED, font_size=24),
+            Text("Trapezoidal O(h^2)", color=GREEN, font_size=24),
+            Text("Simpson's O(h^4)", color=BLUE, font_size=24),
+        ).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)
+        title = Text("Numerical Integration Accuracy Comparison").to_edge(UP)
+        x_label = Text("Number of Intervals (n)").next_to(axes, DOWN)
+        y_label = Text("Error (log scale)").next_to(axes, LEFT)
+        self.add(axes, grid, curve_rect, curve_trap, curve_simp, labels, title, x_label, y_label)
+
+# Render: manim -pql <filename> IntegrationAccuracyScene""",
                     "expected_output": "数值积分方法精度对比图",
                 }
             )
@@ -286,63 +372,60 @@ plt.show()""",
                     "description": "可视化矩阵对向量和网格的线性变换效果"
                     if language == "zh"
                     else "Visualize linear transformation effects on vectors and grids",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
-def plot_matrix_transform(A, title="Matrix Transformation"):
-    fig, ax = plt.subplots(figsize=(8, 8))
+def make_transform_scene(A, title_text):
+    class MatrixTransformScene(Scene):
+        def construct(self):
+            axes = Axes(
+                x_range=[-5, 5, 1],
+                y_range=[-5, 5, 1],
+                x_length=8,
+                y_length=8,
+            ).add_coordinates()
+            grid = NumberPlane(
+                x_range=[-5, 5, 1],
+                y_range=[-5, 5, 1],
+                x_length=8,
+                y_length=8,
+            )
 
-    origin = np.array([0, 0])
-    e1 = np.array([1, 0])
-    e2 = np.array([0, 1])
-    Ae1 = A @ e1
-    Ae2 = A @ e2
+            x_pts = np.linspace(-3, 3, 15)
+            y_pts = np.linspace(-3, 3, 15)
 
-    # Draw grid
-    x = np.linspace(-3, 3, 15)
-    y = np.linspace(-3, 3, 15)
-    X, Y = np.meshgrid(x, y)
+            # Original basis vectors
+            e1 = Arrow(axes.c2p(0,0), axes.c2p(1,0), buff=0, color=RED, stroke_width=4)
+            e2 = Arrow(axes.c2p(0,0), axes.c2p(0,1), buff=0, color=GREEN, stroke_width=4)
+            e1_label = Text("e1", color=RED, font_size=28).next_to(e1, DOWN)
+            e2_label = Text("e2", color=GREEN, font_size=28).next_to(e2, LEFT)
 
-    for i in range(len(x)):
-        ax.plot([x[i], x[i]], [-3, 3], 'gray', alpha=0.15, linewidth=0.5)
-        ax.plot([-3, 3], [y[i], y[i]], 'gray', alpha=0.15, linewidth=0.5)
+            # Transformed basis vectors
+            Ae1 = A @ np.array([1, 0])
+            Ae2 = A @ np.array([0, 1])
+            Ae1_arrow = Arrow(axes.c2p(0,0), axes.c2p(Ae1[0], Ae1[1]), buff=0, color=ORANGE, stroke_width=4)
+            Ae2_arrow = Arrow(axes.c2p(0,0), axes.c2p(Ae2[0], Ae2[1]), buff=0, color=PURPLE, stroke_width=4)
+            Ae1_label = Text("Ae1", color=ORANGE, font_size=28).next_to(Ae1_arrow, DOWN)
+            Ae2_label = Text("Ae2", color=PURPLE, font_size=28).next_to(Ae2_arrow, LEFT)
 
-    # Transformed grid
-    for i in range(len(x)):
-        pts = np.array([[x[i], yj] for yj in y])
-        transformed = (A @ pts.T).T
-        ax.plot(transformed[:, 0], transformed[:, 1], 'blue', alpha=0.2, linewidth=0.5)
+            matrix_str = f"[[{A[0,0]:.1f}, {A[0,1]:.1f}], [{A[1,0]:.1f}, {A[1,1]:.1f}]]"
+            title = Text(f"{title_text} A = {matrix_str}").to_edge(UP)
 
-        pts = np.array([[xj, y[i]] for xj in x])
-        transformed = (A @ pts.T).T
-        ax.plot(transformed[:, 0], transformed[:, 1], 'blue', alpha=0.2, linewidth=0.5)
+            self.add(axes, grid, e1, e2, e1_label, e2_label,
+                     Ae1_arrow, Ae2_arrow, Ae1_label, Ae2_label, title)
+    return MatrixTransformScene
 
-    # Basis vectors
-    ax.quiver(*origin, *e1, angles='xy', scale_units='xy', scale=1, color='red', label='e₁', width=0.015)
-    ax.quiver(*origin, *e2, angles='xy', scale_units='xy', scale=1, color='green', label='e₂', width=0.015)
-    ax.quiver(*origin, *Ae1, angles='xy', scale_units='xy', scale=1, color='orange', label='Ae₁', width=0.015)
-    ax.quiver(*origin, *Ae2, angles='xy', scale_units='xy', scale=1, color='purple', label='Ae₂', width=0.015)
-
-    ax.set_xlim(-5, 5)
-    ax.set_ylim(-5, 5)
-    ax.set_aspect('equal')
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc='upper right')
-    ax.set_title(f'{title}\\nA = [[{A[0,0]:.1f}, {A[0,1]:.1f}], [{A[1,0]:.1f}, {A[1,1]:.1f}]]')
-
-    plt.tight_layout()
-    plt.show()
-
-# Different transformations
 matrices = [
     (np.array([[2, 0], [0, 2]]), "Scaling (2x)"),
     (np.array([[1, 1], [0, 1]]), "Shear"),
-    (np.array([[0, -1], [1, 0]]), "Rotation 90°"),
+    (np.array([[0, -1], [1, 0]]), "Rotation 90 deg"),
     (np.array([[2, 1], [1, 2]]), "General"),
 ]
 
-for A, title in matrices:
-    plot_matrix_transform(A, title)""",
+Scenes = [make_transform_scene(A, title) for A, title in matrices]
+
+# Render each: manim -pql <filename> Scenes[0]  (or assign to named classes)
+# To render all, iterate: for S in Scenes: manim -pql <filename> S""",
                     "expected_output": "矩阵变换可视化图",
                 }
             )
@@ -355,15 +438,13 @@ for A, title in matrices:
                     "description": "分析矩阵的特征结构和谱性质"
                     if language == "zh"
                     else "Analyze matrix spectral properties",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
-# Create symmetric matrix
 np.random.seed(42)
 A = np.random.randn(5, 5)
-A = (A + A.T) / 2  # Make symmetric
+A = (A + A.T) / 2
 
-# Eigen decomposition
 eigenvalues, eigenvectors = np.linalg.eigh(A)
 
 print("Matrix A:")
@@ -372,33 +453,46 @@ print("\\nEigenvalues:", np.round(eigenvalues, 3))
 print("\\nEigenvectors:")
 print(np.round(eigenvectors, 3))
 
-# Verify: Av = λv
 for i in range(len(eigenvalues)):
     v = eigenvectors[:, i]
     Av = A @ v
     lv = eigenvalues[i] * v
     error = np.linalg.norm(Av - lv)
-    print(f"  λ{i+1}={eigenvalues[i]:.3f}: ||Av-λv|| = {error:.2e}")
+    print(f"  lambda{i+1}={eigenvalues[i]:.3f}: ||Av-lv|| = {error:.2e}")
 
-# Spectral visualization
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+class EigenvalueSpectrumScene(Scene):
+    def construct(self):
+        bar_chart = BarChart(
+            values=list(eigenvalues),
+            bar_names=[f"l{i+1}" for i in range(len(eigenvalues))],
+            y_range=[min(eigenvalues)-0.5, max(eigenvalues)+0.5, 1],
+            y_length=6,
+            x_length=6,
+            bar_colors=[STEEL_BLUE for _ in eigenvalues],
+        )
+        title = Text("Eigenvalue Spectrum").to_edge(UP)
+        x_label = Text("Index").next_to(bar_chart, DOWN)
+        y_label = Text("Eigenvalue").next_to(bar_chart, LEFT)
+        zero_line = Line(
+            bar_chart.c2p(0, 0), bar_chart.c2p(len(eigenvalues)+1, 0),
+            color=WHITE, stroke_width=1
+        )
+        self.add(bar_chart, title, x_label, y_label, zero_line)
 
-ax1.bar(range(1, len(eigenvalues)+1), eigenvalues, color='steelblue')
-ax1.axhline(y=0, color='k', linewidth=0.5)
-ax1.set_xlabel('Index')
-ax1.set_ylabel('Eigenvalue')
-ax1.set_title('Eigenvalue Spectrum')
-ax1.grid(True, alpha=0.3)
-
-# Condition number
 cond = abs(eigenvalues[-1]) / abs(eigenvalues[0]) if eigenvalues[0] != 0 else float('inf')
-ax2.text(0.5, 0.5, f'Condition Number: {cond:.2f}\\nRank: {np.linalg.matrix_rank(A)}\\nDeterminant: {np.linalg.det(A):.4f}',
-         ha='center', va='center', fontsize=14, transform=ax2.transAxes)
-ax2.set_title('Matrix Properties')
-ax2.axis('off')
 
-plt.tight_layout()
-plt.show()""",
+class MatrixPropertiesScene(Scene):
+    def construct(self):
+        props = VGroup(
+            Text(f"Condition Number: {cond:.2f}", font_size=36),
+            Text(f"Rank: {np.linalg.matrix_rank(A)}", font_size=36),
+            Text(f"Determinant: {np.linalg.det(A):.4f}", font_size=36),
+        ).arrange(DOWN, buff=0.5)
+        title = Text("Matrix Properties").to_edge(UP)
+        self.add(props, title)
+
+# Render: manim -pql <filename> EigenvalueSpectrumScene
+# Render: manim -pql <filename> MatrixPropertiesScene""",
                     "expected_output": "特征值谱图、矩阵性质分析",
                 }
             )
@@ -413,8 +507,8 @@ plt.show()""",
                     "description": "通过大量随机实验验证中心极限定理"
                     if language == "zh"
                     else "Verify CLT through large-scale random experiments",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 from scipy import stats
 
 np.random.seed(42)
@@ -422,33 +516,33 @@ np.random.seed(42)
 n_samples = [1, 3, 10, 30, 100]
 n_experiments = 10000
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-axes = axes.flatten()
+class CLTSimulationScene(Scene):
+    def construct(self):
+        for n in n_samples:
+            means = [np.mean(np.random.uniform(-1, 1, n)) for _ in range(n_experiments)]
+            std = np.std(means)
 
-for idx, n in enumerate(n_samples):
-    ax = axes[idx]
+            bar_vals, bin_edges = np.histogram(means, bins=50, density=True)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-    # Sample from uniform distribution
-    means = [np.mean(np.random.uniform(-1, 1, n)) for _ in range(n_experiments)]
+            bar_chart = BarChart(
+                values=list(bar_vals),
+                bar_names=[f"" for _ in bar_vals],
+                y_range=[0, float(bar_vals.max())*1.2, float(bar_vals.max())/5],
+                y_length=5,
+                x_length=8,
+            )
 
-    ax.hist(means, bins=50, density=True, alpha=0.7, color='steelblue', label='Sample means')
+            x_norm = np.linspace(min(means), max(means), 100)
+            y_norm = stats.norm.pdf(x_norm, 0, std)
 
-    # Normal fit
-    x = np.linspace(min(means), max(means), 100)
-    std = np.std(means)
-    ax.plot(x, stats.norm.pdf(x, 0, std), 'r-', linewidth=2, label='Normal fit')
+            title = Text(f"n = {n}, mu = {np.mean(means):.4f}, sigma = {std:.4f}").to_edge(UP)
+            subtitle = Text("Central Limit Theorem Demonstration", font_size=36).to_edge(UP).shift(UP * 0.05)
+            self.play(FadeIn(bar_chart), FadeIn(title))
+            self.wait(2)
+            self.play(FadeOut(bar_chart), FadeOut(title))
 
-    ax.set_title(f'n = {n}\\nμ = {np.mean(means):.4f}, σ = {std:.4f}')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-axes[-1].axis('off')
-axes[-1].text(0.5, 0.5, 'As n increases,\\nthe distribution of\\nsample means\\napproaches normal',
-              ha='center', va='center', fontsize=12, transform=axes[-1].transAxes)
-
-plt.suptitle('Central Limit Theorem Demonstration', fontsize=16, y=1.02)
-plt.tight_layout()
-plt.show()""",
+# Render: manim -pql <filename> CLTSimulationScene""",
                     "expected_output": "中心极限定理验证图",
                 }
             )
@@ -463,37 +557,65 @@ plt.show()""",
                     "description": "通过数值方法验证重要极限"
                     if language == "zh"
                     else "Verify important limits numerically",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
-# lim(x→0) sin(x)/x = 1
 x1 = np.logspace(-10, 0, 100)
 y1 = np.sin(x1) / x1
 
-# lim(x→∞) (1+1/x)^x = e
 x2 = np.logspace(0, 6, 100)
 y2 = (1 + 1/x2)**x2
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+class LimitSinXScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[1e-10, 1, 1e-1],
+            y_range=[0, 1.2, 0.2],
+            x_length=8,
+            y_length=5,
+            x_axis_config={"scaling": LogBase(base=10)},
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[1e-10, 1, 1e-1],
+            y_range=[0, 1.2, 0.2],
+            x_length=8,
+            y_length=5,
+            x_axis_config={"scaling": LogBase(base=10)},
+        )
+        curve = axes.plot_line_graph(x1, y1, line_color=BLUE)
+        limit_line = DashedLine(axes.c2p(1e-10, 1), axes.c2p(1, 1), color=RED)
+        limit_label = Text("Limit = 1", color=RED, font_size=28).next_to(limit_line, UP)
+        title = Text("lim(x->0) sin(x)/x = 1").to_edge(UP)
+        x_label = Text("x").next_to(axes, DOWN)
+        y_label = Text("sin(x)/x").next_to(axes, LEFT)
+        self.add(axes, grid, curve, limit_line, limit_label, title, x_label, y_label)
 
-ax1.semilogx(x1, y1, 'b-', linewidth=2)
-ax1.axhline(y=1, color='r', linestyle='--', label='Limit = 1')
-ax1.set_xlabel('x')
-ax1.set_ylabel('sin(x)/x')
-ax1.set_title('lim(x→0) sin(x)/x = 1')
-ax1.legend()
-ax1.grid(True, alpha=0.3)
+class LimitEScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[1, 1e6, 1e5],
+            y_range=[1, 3, 0.5],
+            x_length=8,
+            y_length=5,
+            x_axis_config={"scaling": LogBase(base=10)},
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[1, 1e6, 1e5],
+            y_range=[1, 3, 0.5],
+            x_length=8,
+            y_length=5,
+            x_axis_config={"scaling": LogBase(base=10)},
+        )
+        curve = axes.plot_line_graph(x2, y2, line_color=GREEN)
+        limit_line = DashedLine(axes.c2p(1, np.e), axes.c2p(1e6, np.e), color=RED)
+        limit_label = Text(f"Limit = e = {np.e:.4f}", color=RED, font_size=28).next_to(limit_line, UP)
+        title = Text("lim(x->inf) (1+1/x)^x = e").to_edge(UP)
+        x_label = Text("x").next_to(axes, DOWN)
+        y_label = Text("(1+1/x)^x").next_to(axes, LEFT)
+        self.add(axes, grid, curve, limit_line, limit_label, title, x_label, y_label)
 
-ax2.semilogx(x2, y2, 'g-', linewidth=2)
-ax2.axhline(y=np.e, color='r', linestyle='--', label=f'Limit = e ≈ {np.e:.4f}')
-ax2.set_xlabel('x')
-ax2.set_ylabel('(1+1/x)^x')
-ax2.set_title('lim(x→∞) (1+1/x)^x = e')
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()""",
+# Render: manim -pql <filename> LimitSinXScene
+# Render: manim -pql <filename> LimitEScene""",
                     "expected_output": "极限数值验证图",
                 }
             )
@@ -508,45 +630,103 @@ plt.show()""",
                     "description": "可视化三角函数及其导数、积分的关系"
                     if language == "zh"
                     else "Visualize trigonometric functions and their derivatives/integrals",
-                    "code": """import numpy as np
-import matplotlib.pyplot as plt
+                    "code": """from manim import *
+import numpy as np
 
-x = np.linspace(-2*np.pi, 2*np.pi, 500)
+class BasicTrigScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-4, 4, 1],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-4, 4, 1],
+            x_length=10,
+            y_length=5,
+        )
+        x_vals = np.linspace(-2*np.pi, 2*np.pi, 500)
+        sin_curve = axes.plot_line_graph(x_vals, np.sin(x_vals), line_color=BLUE)
+        cos_curve = axes.plot_line_graph(x_vals, np.cos(x_vals), line_color=RED)
+        tan_curve = axes.plot_line_graph(x_vals, np.clip(np.tan(x_vals), -4, 4), line_color=GREEN)
+        labels = VGroup(
+            Text("sin(x)", color=BLUE, font_size=24),
+            Text("cos(x)", color=RED, font_size=24),
+            Text("tan(x)", color=GREEN, font_size=24),
+        ).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)
+        title = Text("Basic Trigonometric Functions").to_edge(UP)
+        self.add(axes, grid, sin_curve, cos_curve, tan_curve, labels, title)
 
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+class TrigDerivativesScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=10,
+            y_length=5,
+        )
+        x_vals = np.linspace(-2*np.pi, 2*np.pi, 500)
+        d_sin = axes.plot_line_graph(x_vals, np.cos(x_vals), line_color=BLUE)
+        d_cos = axes.plot_line_graph(x_vals, -np.sin(x_vals), line_color=RED)
+        labels = VGroup(
+            Text("d/dx sin(x) = cos(x)", color=BLUE, font_size=24),
+            Text("d/dx cos(x) = -sin(x)", color=RED, font_size=24),
+        ).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)
+        title = Text("Derivatives").to_edge(UP)
+        self.add(axes, grid, d_sin, d_cos, labels, title)
 
-# Basic functions
-axes[0, 0].plot(x, np.sin(x), 'b-', label='sin(x)', linewidth=2)
-axes[0, 0].plot(x, np.cos(x), 'r-', label='cos(x)', linewidth=2)
-axes[0, 0].plot(x, np.tan(x), 'g-', label='tan(x)', linewidth=1, alpha=0.5)
-axes[0, 0].set_ylim(-4, 4)
-axes[0, 0].legend()
-axes[0, 0].grid(True, alpha=0.3)
-axes[0, 0].set_title('Basic Trigonometric Functions')
+class PythagoreanIdentityScene(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[0, 1.5, 0.5],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-2*np.pi, 2*np.pi, np.pi],
+            y_range=[0, 1.5, 0.5],
+            x_length=10,
+            y_length=5,
+        )
+        x_vals = np.linspace(-2*np.pi, 2*np.pi, 500)
+        identity_curve = axes.plot_line_graph(x_vals, np.sin(x_vals)**2 + np.cos(x_vals)**2, line_color=GREEN)
+        one_line = DashedLine(axes.c2p(-2*np.pi, 1), axes.c2p(2*np.pi, 1), color=RED)
+        one_label = Text("1", color=RED, font_size=28).next_to(one_line, UP)
+        title = Text("Pythagorean Identity: sin^2(x) + cos^2(x) = 1").to_edge(UP)
+        self.add(axes, grid, identity_curve, one_line, one_label, title)
 
-# Derivatives
-axes[0, 1].plot(x, np.cos(x), 'b--', label="d/dx sin(x) = cos(x)", linewidth=2)
-axes[0, 1].plot(x, -np.sin(x), 'r--', label="d/dx cos(x) = -sin(x)", linewidth=2)
-axes[0, 1].legend()
-axes[0, 1].grid(True, alpha=0.3)
-axes[0, 1].set_title('Derivatives')
+class UnitCircleScene(Scene):
+    def construct(self):
+        theta_vals = np.linspace(0, 2*np.pi, 100)
+        circle = Ellipse(width=4, height=4, color=BLUE)
+        axes = Axes(
+            x_range=[-1.5, 1.5, 0.5],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=6,
+            y_length=6,
+        ).add_coordinates()
+        grid = NumberPlane(
+            x_range=[-1.5, 1.5, 0.5],
+            y_range=[-1.5, 1.5, 0.5],
+            x_length=6,
+            y_length=6,
+        )
+        title = Text("Unit Circle").to_edge(UP)
+        self.add(axes, grid, circle, title)
 
-# sin² + cos² = 1
-axes[1, 0].plot(x, np.sin(x)**2 + np.cos(x)**2, 'g-', linewidth=2, label='sin²(x)+cos²(x)')
-axes[1, 0].axhline(y=1, color='r', linestyle='--', label='1')
-axes[1, 0].legend()
-axes[1, 0].grid(True, alpha=0.3)
-axes[1, 0].set_title('Pythagorean Identity')
-
-# Unit circle
-theta = np.linspace(0, 2*np.pi, 100)
-axes[1, 1].plot(np.cos(theta), np.sin(theta), 'b-', linewidth=2)
-axes[1, 1].set_aspect('equal')
-axes[1, 1].grid(True, alpha=0.3)
-axes[1, 1].set_title('Unit Circle')
-
-plt.tight_layout()
-plt.show()""",
+# Render: manim -pql <filename> BasicTrigScene
+# Render: manim -pql <filename> TrigDerivativesScene
+# Render: manim -pql <filename> PythagoreanIdentityScene
+# Render: manim -pql <filename> UnitCircleScene""",
                     "expected_output": "三角函数综合可视化图",
                 }
             )
@@ -569,9 +749,9 @@ plt.show()""",
 4. 完整的 Python 代码实现
 
 代码要求：
-- 使用 numpy, matplotlib, scipy, sympy
+- 使用 numpy, manim, scipy, sympy
 - 包含详细注释
-- 生成至少 2 个可视化图表
+- 生成至少 2 个可视化场景（使用 manim Scene 类）
 - 包含结果分析和结论"""
 
         messages = [{"role": "user", "content": prompt}]
@@ -591,10 +771,9 @@ plt.show()""",
         return []
 
     def generate_visualizations(self, topic: str, experiments: list) -> list:
-        """Generate visualizations for the experiments."""
+        """Generate visualizations for the experiments using manim."""
         visualizations = []
 
-        # Generate base64 encoded visualizations
         try:
             if "函数" in topic or "function" in topic.lower():
                 import numpy as np
@@ -603,7 +782,7 @@ plt.show()""",
                     lambda x: np.sin(x), x_range=(-10, 10), title="y = sin(x)"
                 )
                 if result.success:
-                    visualizations.append({"type": "function", "data": result.data})
+                    visualizations.append({"type": "function", "path": result.data})
 
             if "数列" in topic or "sequence" in topic.lower():
                 import numpy as np
@@ -612,10 +791,10 @@ plt.show()""",
                 for i in range(2, 20):
                     fib.append(fib[-1] + fib[-2])
                 result = Visualizer.plot_scatter(
-                    np.arange(1, 21), fib, title="Fibonacci Sequence"
+                    np.arange(1, 21), np.array(fib), title="Fibonacci Sequence"
                 )
                 if result.success:
-                    visualizations.append({"type": "sequence", "data": result.data})
+                    visualizations.append({"type": "sequence", "path": result.data})
 
             if "概率" in topic or "probability" in topic.lower():
                 import numpy as np
@@ -625,7 +804,7 @@ plt.show()""",
                     data, bins=30, title="Normal Distribution Sample"
                 )
                 if result.success:
-                    visualizations.append({"type": "histogram", "data": result.data})
+                    visualizations.append({"type": "histogram", "path": result.data})
         except Exception:
             pass
 

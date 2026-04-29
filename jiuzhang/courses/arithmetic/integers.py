@@ -3,11 +3,7 @@
 Demonstrates integer concepts with Python code and visualizations.
 """
 
-import numpy as np
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+from manim import *
 
 
 def demonstrate_integers():
@@ -20,80 +16,54 @@ def demonstrate_integers():
     return integers
 
 
-def plot_integer_number_line(save_path=None):
-    """Plot integers on a number line with positive/negative coloring."""
-    fig, ax = plt.subplots(figsize=(12, 2))
+class IntegerNumberLine(Scene):
+    def construct(self):
+        number_line = NumberLine(
+            x_range=[-6, 6, 1],
+            length=12,
+            include_numbers=True,
+            font_size=36,
+        ).shift(DOWN * 0.5)
 
-    ax.set_xlim(-7, 7)
-    ax.set_ylim(-1, 1)
-    ax.axhline(y=0, color="gray", linewidth=1.5)
+        for x in range(-6, 7):
+            if x < 0:
+                num = MathTex(str(x), color=RED).move_to(number_line.n2p(x) + DOWN * 0.5)
+            elif x > 0:
+                num = MathTex(str(x), color=BLUE).move_to(number_line.n2p(x) + DOWN * 0.5)
+            else:
+                num = MathTex("0", color=GREEN).move_to(number_line.n2p(x) + DOWN * 0.5)
 
-    for x in range(-6, 7):
-        if x < 0:
-            color = "red"
-        elif x > 0:
-            color = "blue"
-        else:
-            color = "green"
-
-        ax.plot([x, x], [-0.15, 0.15], color=color, linewidth=2)
-        ax.text(
-            x, -0.35, str(x), ha="center", fontsize=11, color=color, fontweight="bold"
-        )
-
-    ax.axvline(x=0, color="green", linewidth=2, linestyle="--", alpha=0.5)
-    ax.set_title("整数数轴 (Integer Number Line)", fontsize=14, pad=20)
-    ax.axis("off")
-    plt.tight_layout()
-
-    if save_path:
-        fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"Saved to {save_path}")
-
-    plt.close(fig)
-    return fig
+        self.add(number_line)
+        title = Text("整数数轴 (Integer Number Line)", font_size=36).to_edge(UP)
+        self.add(title)
 
 
-def demonstrate_temperature():
-    """Demonstrate positive and negative integers using temperature."""
-    temperatures = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
-    labels = [
-        "-10°C\n很冷",
-        "-5°C\n冷",
-        "0°C\n冰点",
-        "5°C\n凉",
-        "10°C\n温和",
-        "15°C\n舒适",
-        "20°C\n暖和",
-        "25°C\n热",
-        "30°C\n很热",
-    ]
+class TemperatureAndIntegers(Scene):
+    def construct(self):
+        temperatures = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
+        labels = ["-10°C\n很冷", "-5°C\n冷", "0°C\n冰点", "5°C\n凉",
+                  "10°C\n温和", "15°C\n舒适", "20°C\n暖和", "25°C\n热", "30°C\n很热"]
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    colors = ["red" if t < 0 else "green" if t == 0 else "blue" for t in temperatures]
+        axes = Axes(
+            x_range=[0, len(temperatures), 1],
+            y_range=[-15, 35, 10],
+            x_length=10,
+            y_length=5,
+        ).add_coordinates().shift(DOWN * 0.3)
 
-    bars = ax.bar(
-        range(len(temperatures)), temperatures, color=colors, edgecolor="black"
-    )
+        for i, t in enumerate(temperatures):
+            color = RED if t < 0 else GREEN if t == 0 else BLUE
+            bar = Rectangle(
+                width=0.6,
+                height=abs(t) * 5 / 35,
+                fill_opacity=0.7,
+                fill_color=color,
+                stroke_color=WHITE,
+            ).move_to(axes.c2p(i + 0.5, t / 2))
+            self.add(bar)
 
-    for bar, label in zip(bars, labels):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + (1 if bar.get_height() >= 0 else -2),
-            label,
-            ha="center",
-            fontsize=9,
-        )
-
-    ax.axhline(y=0, color="black", linewidth=2)
-    ax.set_xticks(range(len(temperatures)))
-    ax.set_xticklabels([str(t) for t in temperatures])
-    ax.set_ylabel("温度 (°C)")
-    ax.set_title("温度与整数 (Temperature and Integers)")
-    ax.grid(True, alpha=0.3, axis="y")
-    plt.tight_layout()
-    plt.close(fig)
-    return fig
+        title = Text("温度与整数", font_size=36).to_edge(UP)
+        self.add(axes, title)
 
 
 def demonstrate_integer_operations():
@@ -110,7 +80,5 @@ if __name__ == "__main__":
     print("=== 整数演示 ===")
     demonstrate_integers()
     print()
-    plot_integer_number_line("integer_number_line.png")
-    demonstrate_temperature()
     demonstrate_integer_operations()
     print("\n完成！")

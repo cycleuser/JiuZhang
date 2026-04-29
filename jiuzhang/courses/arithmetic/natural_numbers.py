@@ -3,11 +3,7 @@
 Demonstrates natural number concepts with Python code and visualizations.
 """
 
-import numpy as np
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+from manim import *
 
 
 def demonstrate_natural_numbers():
@@ -19,60 +15,45 @@ def demonstrate_natural_numbers():
     return natural_nums
 
 
-def plot_natural_number_line(save_path=None):
-    """Plot natural numbers on a number line."""
-    fig, ax = plt.subplots(figsize=(10, 2))
+class NaturalNumberLine(Scene):
+    def construct(self):
+        number_line = NumberLine(
+            x_range=[0, 10, 1],
+            length=10,
+            include_numbers=True,
+            font_size=36,
+        ).shift(DOWN * 0.5)
 
-    ax.set_xlim(-1, 11)
-    ax.set_ylim(-1, 1)
-    ax.axhline(y=0, color="black", linewidth=2)
-
-    for x in range(0, 11):
-        ax.plot([x, x], [-0.15, 0.15], color="black", linewidth=1.5)
-        ax.text(x, -0.35, str(x), ha="center", fontsize=11, fontweight="bold")
-
-    ax.set_title("自然数数轴 (Natural Numbers)", fontsize=14, pad=20)
-    ax.axis("off")
-    plt.tight_layout()
-
-    if save_path:
-        fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"Saved to {save_path}")
-
-    plt.close(fig)
-    return fig
+        self.add(number_line)
+        title = Text("自然数数轴 (Natural Numbers)", font_size=36).to_edge(UP)
+        self.add(title)
 
 
-def demonstrate_counting():
-    """Demonstrate counting with visual objects."""
-    counts = [1, 2, 3, 4, 5]
-    fig, axes = plt.subplots(1, 5, figsize=(12, 3))
+class CountingDemo(Scene):
+    def construct(self):
+        counts = [1, 2, 3, 4, 5]
+        groups = VGroup()
 
-    for i, count in enumerate(counts):
-        ax = axes[i]
-        ax.set_xlim(-0.5, 2.5)
-        ax.set_ylim(-0.5, 2.5)
+        for i, count in enumerate(counts):
+            dot_group = VGroup()
+            for j in range(count):
+                x = j % 3 - 1
+                y = j // 3
+                dot = Dot(point=np.array([x, y, 0]), radius=0.2, color=BLUE)
+                dot_group.add(dot)
 
-        for j in range(count):
-            x = j % 3
-            y = j // 3
-            circle = plt.Circle((x, y), 0.3, color="steelblue", fill=True)
-            ax.add_patch(circle)
+            label = Text(str(count), font_size=24).next_to(dot_group, DOWN, buff=0.3)
+            group = VGroup(dot_group, label)
+            groups.add(group)
 
-        ax.set_title(f"{count}", fontsize=16)
-        ax.set_aspect("equal")
-        ax.axis("off")
-
-    plt.suptitle("计数演示 (Counting Demo)", fontsize=14, y=1.05)
-    plt.tight_layout()
-    plt.close(fig)
-    return fig
+        groups.arrange(RIGHT, buff=1).shift(DOWN * 0.3)
+        self.add(groups)
+        title = Text("计数演示 (Counting Demo)", font_size=36).to_edge(UP)
+        self.add(title)
 
 
 if __name__ == "__main__":
     print("=== 自然数演示 ===")
     demonstrate_natural_numbers()
     print()
-    plot_natural_number_line("natural_number_line.png")
-    demonstrate_counting()
     print("完成！")

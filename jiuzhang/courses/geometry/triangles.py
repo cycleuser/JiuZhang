@@ -167,41 +167,35 @@ for a, b, c in triples:
             {
                 "title": "Triangle Visualization",
                 "title_cn": "三角形可视化",
-                "code": """import matplotlib.pyplot as plt
-import numpy as np
+                "code": """from manim import *
 
-fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+class TriangleVisualization(Scene):
+    def construct(self):
+        right_tri = Polygon(
+            [-2, -1, 0], [1, -1, 0], [-2, 2, 0],
+            color=BLUE,
+        ).shift(LEFT * 4)
+        right_label = Text("直角三角形 (3,4,5)", font_size=20).next_to(right_tri, DOWN)
 
-# 直角三角形
-ax = axes[0]
-ax.plot([0, 3, 0, 0], [0, 0, 4, 0], 'b-', linewidth=2)
-ax.text(1.5, -0.3, '3', ha='center')
-ax.text(-0.3, 2, '4', va='center')
-ax.text(1.7, 2.2, '5', color='red')
-ax.set_title('直角三角形 (3,4,5)')
-ax.set_aspect('equal')
-ax.grid(True, alpha=0.3)
+        h = np.sqrt(3) / 2
+        equi_tri = Polygon(
+            [-0.5, -0.5, 0], [0.5, -0.5, 0], [0, h - 0.5, 0],
+            color=GREEN,
+        )
+        equi_label = Text("等边三角形", font_size=20).next_to(equi_tri, DOWN)
 
-# 等边三角形
-ax = axes[1]
-h = np.sqrt(3) / 2
-ax.plot([0, 1, 0.5, 0], [0, 0, h, 0], 'g-', linewidth=2)
-ax.set_title('等边三角形')
-ax.set_aspect('equal')
-ax.grid(True, alpha=0.3)
+        a, b = 3, 4
+        sq_a = Square(side_length=0.6).set_color(RED).shift(LEFT * 1.5 + DOWN * 0.5)
+        sq_b = Square(side_length=0.8).set_color(GREEN).next_to(sq_a, RIGHT, buff=0.1, aligned_edge=DOWN)
+        pyth_label = MathTex("a^2 + b^2 = c^2", font_size=28).next_to(VGroup(sq_a, sq_b), DOWN)
 
-# 勾股定理可视化
-ax = axes[2]
-a, b = 3, 4
-ax.add_patch(plt.Rectangle((0, 0), a, a, fill=False, edgecolor='r'))
-ax.add_patch(plt.Rectangle((a, 0), b, b, fill=False, edgecolor='g'))
-ax.plot([0, a], [a, 0], 'b-', linewidth=2)
-ax.set_title('a² + b² = c²')
-ax.set_aspect('equal')
-ax.grid(True, alpha=0.3)
+        right_group = VGroup(right_tri, right_label)
+        equi_group = VGroup(equi_tri, equi_label)
+        pyth_group = VGroup(sq_a, sq_b, pyth_label)
 
-plt.tight_layout()
-plt.show()""",
+        groups = VGroup(right_group, equi_group, pyth_group).arrange(RIGHT, buff=1)
+        title = Text("三角形与勾股定理", font_size=36).to_edge(UP)
+        self.add(groups, title)""",
             },
         ],
         estimated_minutes=75,
@@ -287,26 +281,39 @@ for deg in [30, 45, 60]:
             {
                 "title": "Trig Function Plots",
                 "title_cn": "三角函数图像",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-x = np.linspace(0, 2*np.pi, 200)
+class TrigFunctionPlots(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[0, 2 * np.pi, np.pi / 2],
+            y_range=[-4, 4, 1],
+            x_length=10,
+            y_length=5,
+            axis_config={"color": GREY},
+        ).add_coordinates()
 
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(x, np.sin(x), 'b-', label='sin(x)', linewidth=2)
-ax.plot(x, np.cos(x), 'r-', label='cos(x)', linewidth=2)
-ax.plot(x, np.tan(x), 'g-', label='tan(x)', linewidth=1, alpha=0.5)
+        x_labels = {
+            0: "0", np.pi / 2: "\\pi/2", np.pi: "\\pi",
+            3 * np.pi / 2: "3\\pi/2", 2 * np.pi: "2\\pi",
+        }
+        for val, label in x_labels.items():
+            axes.x_labels.add(MathTex(label, font_size=24).next_to(axes.c2p(val, 0), DOWN, buff=0.2))
 
-ax.axhline(y=0, color='k', linewidth=0.5)
-ax.axvline(x=0, color='k', linewidth=0.5)
-ax.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
-ax.set_xticklabels(['0', 'π/2', 'π', '3π/2', '2π'])
-ax.set_ylim(-4, 4)
-ax.grid(True, alpha=0.3)
-ax.legend()
-ax.set_title('三角函数图像')
-plt.tight_layout()
-plt.show()""",
+        self.add(axes)
+
+        sin_curve = axes.plot(lambda x: np.sin(x), color=BLUE, x_range=[0, 2 * np.pi])
+        cos_curve = axes.plot(lambda x: np.cos(x), color=RED, x_range=[0, 2 * np.pi])
+        tan_curve = axes.plot(lambda x: np.tan(x), color=GREEN, x_range=[0.1, np.pi / 2 - 0.1])
+
+        sin_label = MathTex("\\sin(x)", color=BLUE, font_size=28).next_to(sin_curve, UR, buff=0.1)
+        cos_label = MathTex("\\cos(x)", color=RED, font_size=28).next_to(cos_curve, UR, buff=0.1)
+        tan_label = MathTex("\\tan(x)", color=GREEN, font_size=28).next_to(tan_curve, UR, buff=0.1)
+
+        self.add(sin_curve, cos_curve, tan_curve, sin_label, cos_label, tan_label)
+
+        title = Text("三角函数图像", font_size=36).to_edge(UP)
+        self.add(title)""",
             },
         ],
         estimated_minutes=90,

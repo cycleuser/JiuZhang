@@ -240,30 +240,29 @@ print(f"x₁ = {x1}, x₂ = {x2}")""",
             {
                 "title": "Function Visualization",
                 "title_cn": "函数图像",
-                "code": """import numpy as np
-import matplotlib.pyplot as plt
+                "code": """from manim import *
 
-x = np.linspace(-5, 5, 100)
+class FunctionVisualization(Scene):
+    def construct(self):
+        axes = Axes(
+            x_range=[-5, 5, 1],
+            y_range=[-5, 10, 2],
+            x_length=8,
+            y_length=6,
+            axis_config={"color": GREY},
+        ).add_coordinates()
+        self.add(axes)
 
-fig, ax = plt.subplots(figsize=(8, 6))
+        linear_curve = axes.plot(lambda x: 2 * x + 1, color=BLUE, x_range=[-5, 5])
+        quad_curve = axes.plot(lambda x: x**2 - 4, color=RED, x_range=[-5, 5])
 
-# 一次函数
-y1 = 2 * x + 1
-ax.plot(x, y1, 'b-', label='y = 2x + 1', linewidth=2)
+        linear_label = MathTex("y = 2x + 1", color=BLUE, font_size=28).next_to(linear_curve, UR, buff=0.1)
+        quad_label = MathTex("y = x^2 - 4", color=RED, font_size=28).next_to(quad_curve, UR, buff=0.1)
 
-# 二次函数
-y2 = x**2 - 4
-ax.plot(x, y2, 'r-', label='y = x² - 4', linewidth=2)
+        self.add(linear_curve, quad_curve, linear_label, quad_label)
 
-ax.axhline(y=0, color='k', linewidth=0.5)
-ax.axvline(x=0, color='k', linewidth=0.5)
-ax.grid(True, alpha=0.3)
-ax.legend()
-ax.set_title('一次函数与二次函数')
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-plt.tight_layout()
-plt.show()""",
+        title = Text("一次函数与二次函数", font_size=36).to_edge(UP)
+        self.add(title)""",
             },
         ],
         estimated_minutes=90,

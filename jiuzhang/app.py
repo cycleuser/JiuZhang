@@ -272,8 +272,22 @@ def create_app(config: Config = None):
             ), 400
 
         if result.success:
+            import base64
+            import mimetypes
+            response_data = result.data
+            content_type = result.metadata.get("content_type", "video/mp4")
+            file_path = result.data
+
+            if result.metadata.get("type") == "file" and os.path.exists(file_path):
+                file_size = os.path.getsize(file_path)
+                if file_size < 10 * 1024 * 1024:
+                    with open(file_path, "rb") as f:
+                        response_data = base64.b64encode(f.read()).decode("utf-8")
+                    content_type = mimetypes.guess_type(file_path)[0] or "video/mp4"
+                    os.unlink(file_path)
+
             return jsonify(
-                {"success": True, "data": result.data, "metadata": result.metadata}
+                {"success": True, "data": response_data, "metadata": {**result.metadata, "content_type": content_type}}
             )
         return jsonify({"success": False, "error": result.error}), 500
 
