@@ -9,33 +9,37 @@ from typing import Optional
 import os
 import tempfile
 
-from manim import (
-    Scene,
-    ThreeDScene,
-    ThreeDAxes,
-    Surface,
-    NumberPlane,
-    Arrow,
-    Dot,
-    VGroup,
-    Text,
-    MathTex,
-    ImageMobject,
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    ORIGIN,
-    BLUE,
-    RED,
-    GREEN,
-    YELLOW,
-    WHITE,
-    PI,
-    DEGREES,
-    Create,
-    Write,
-)
+try:
+    from manim import (
+        Scene,
+        ThreeDScene,
+        ThreeDAxes,
+        Surface,
+        NumberPlane,
+        Arrow,
+        Dot,
+        VGroup,
+        Text,
+        MathTex,
+        ImageMobject,
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        ORIGIN,
+        BLUE,
+        RED,
+        GREEN,
+        YELLOW,
+        WHITE,
+        PI,
+        DEGREES,
+        Create,
+        Write,
+    )
+    HAS_MANIM = True
+except ImportError:
+    HAS_MANIM = False
 
 from jiuzhang.visualization.font_config import configure_manim, get_manim_font
 from jiuzhang.math_engine.visualizer import _render_scene

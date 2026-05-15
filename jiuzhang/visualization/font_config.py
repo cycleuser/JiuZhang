@@ -121,7 +121,10 @@ def configure_manim(language: str = "zh") -> str:
     """
     global _manimmation_config_done
 
-    from manim import config as manim_config
+    try:
+        from manim import config as manim_config
+    except ImportError:
+        return get_manim_font(language)
 
     if not _manimmation_config_done:
         manim_config.quality = "low_quality"

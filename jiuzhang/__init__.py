@@ -4,6 +4,14 @@ From basic number concepts to frontier mathematics, with code implementations,
 visualizations, and thorough explanations. Supports multiple AI model providers
 including Ollama, OpenAI, Anthropic, and Alibaba CodingPlan.
 
+Core capabilities:
+- Method Registry: 50+ mathematical methods across all domains
+- Problem Classifier: Automatic domain/type/difficulty detection
+- Solver Pipeline: Step-by-step solution with verification
+- Hybrid Reasoning: Symbolic + LLM reasoning with cross-verification
+- Proof Generator: Structured proofs with multiple strategies
+- Manim Visualizations: Beautiful PNG/MP4 output for all math concepts
+
 Research capabilities:
 - Literature search (arXiv, CrossRef)
 - Advanced symbolic computation (differential geometry, Lie theory, etc.)
@@ -57,6 +65,16 @@ from jiuzhang.math_extractor import (
     SUPPORTED_1B_MODELS,
 )
 
+# Solver module
+from jiuzhang.solver.method_registry import MethodRegistry, MathMethod, MethodCategory
+from jiuzhang.solver.problem_classifier import ProblemClassifier, ProblemType as SolverProblemType, ClassificationResult
+from jiuzhang.solver.pipeline import SolverPipeline, SolveResult
+
+# Reasoning module
+from jiuzhang.reasoning.hybrid_engine import HybridReasoningEngine, ReasoningResult
+from jiuzhang.reasoning.proof_generator import ProofGenerator, Proof as GeneratedProof, ProofStep as GeneratedProofStep
+from jiuzhang.reasoning.method_chain import MethodChain, ChainResult
+
 __all__ = [
     "__version__",
     "ToolResult",
@@ -95,4 +113,21 @@ __all__ = [
     "GGUFModelInfo",
     "ExtractionResult",
     "SUPPORTED_1B_MODELS",
+    # Solver
+    "MethodRegistry",
+    "MathMethod",
+    "MethodCategory",
+    "ProblemClassifier",
+    "SolverProblemType",
+    "ClassificationResult",
+    "SolverPipeline",
+    "SolveResult",
+    # Reasoning
+    "HybridReasoningEngine",
+    "ReasoningResult",
+    "ProofGenerator",
+    "GeneratedProof",
+    "GeneratedProofStep",
+    "MethodChain",
+    "ChainResult",
 ]

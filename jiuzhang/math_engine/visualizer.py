@@ -10,59 +10,25 @@ import tempfile
 from typing import Optional, Callable
 
 import numpy as np
-from manim import (
-    Scene,
-    NumberLine as ManimNumberLine,
-    Axes,
-    NumberPlane,
-    Dot,
-    BarChart,
-    MathTex,
-    Text,
-    VGroup,
-    Rectangle as ManimRect,
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    ORIGIN,
-    BLUE,
-    RED,
-    GREEN,
-    YELLOW,
-    WHITE,
-    BLACK,
-    BLUE_D,
-    DEGREES,
-)
 
 from jiuzhang.visualization.font_config import configure_manim, get_manim_font
 from jiuzhang.core.errors import ToolResult, VisualizationError
 
 
 def _render_scene(scene_cls, output_dir: Optional[str] = None, format: str = "mp4") -> str:
-    """Render a manim Scene and return the output file path.
-
-    Args:
-        scene_cls: A subclass of Scene to render.
-        output_dir: Directory for output files. Defaults to temp dir.
-        format: Output format ("mp4" or "png").
-
-    Returns:
-        Path to the rendered file.
-    """
+    """Render a manim Scene and return the output file path."""
     from manim import config as manim_config
 
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="jiuzhang_viz_")
 
-    manim_config.output_file = output_dir
+    manim_config.media_dir = output_dir
     manim_config.quality = "low_quality"
     manim_config.write_to_movie = format == "mp4"
 
     scene = scene_cls()
     scene.render()
-    return scene.renderer.file_writer.get_movie_path()
+    return scene.renderer.file_writer.movie_file_path
 
 
 class Visualizer:
@@ -82,30 +48,19 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Plot a number line using manim.
+        """Plot a number line using manim."""
+        from manim import Scene, NumberLine, Dot, MathTex, Text, UP, RED
 
-        Args:
-            start: Start of number line
-            end: End of number line
-            highlight: List of numbers to highlight
-            title: Plot title
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
         highlight = highlight or []
 
         class NumberLineScene(Scene):
             def construct(self_inner):
-                number_line = ManimNumberLine(
+                number_line = NumberLine(
                     x_range=[start, end, 1],
                     length=10,
                     include_numbers=True,
-                    include_tip=True,
                 )
                 self_inner.add(number_line)
 
@@ -117,18 +72,7 @@ class Visualizer:
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
                 self_inner.add(title_text)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(NumberLineScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(NumberLineScene, save_path)
 
     @staticmethod
     def plot_function(
@@ -142,22 +86,9 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Plot a mathematical function using manim.
+        """Plot a mathematical function using manim."""
+        from manim import Scene, Axes, NumberPlane, Text, MathTex, UP, DOWN, LEFT, BLUE, DEGREES
 
-        Args:
-            func: Function to plot
-            x_range: Range of x values
-            num_points: Number of points to plot
-            title: Plot title
-            xlabel: X-axis label
-            ylabel: Y-axis label
-            grid: Whether to show grid
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
 
@@ -184,24 +115,11 @@ class Visualizer:
                 self_inner.add(curve)
 
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
-
                 x_label = MathTex(xlabel, font_size=24).next_to(axes.x_axis, DOWN, buff=0.3)
                 y_label = MathTex(ylabel, font_size=24).next_to(axes.y_axis, LEFT, buff=0.3).rotate(90 * DEGREES)
-
                 self_inner.add(title_text, x_label, y_label)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(FunctionScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(FunctionScene, save_path)
 
     @staticmethod
     def plot_scatter(
@@ -214,31 +132,14 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Create a scatter plot using manim.
+        """Create a scatter plot using manim."""
+        from manim import Scene, Axes, Dot, VGroup, Text, BLUE
 
-        Args:
-            x: X values
-            y: Y values
-            title: Plot title
-            xlabel: X-axis label
-            ylabel: Y-axis label
-            color: Point color name (manim color string)
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
 
-        color_map = {
-            "blue": BLUE,
-            "red": RED,
-            "green": GREEN,
-            "yellow": YELLOW,
-        }
-        dot_color = color_map.get(color.lower(), BLUE)
+        color_map = {"blue": BLUE, "red": "RED", "green": "GREEN", "yellow": "YELLOW"}
+        dot_color = BLUE
 
         x_min, x_max = float(x.min()), float(x.max())
         y_min, y_max = float(y.min()), float(y.max())
@@ -265,18 +166,7 @@ class Visualizer:
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
                 self_inner.add(title_text)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(ScatterScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(ScatterScene, save_path)
 
     @staticmethod
     def plot_bar(
@@ -289,32 +179,13 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Create a bar chart using manim.
+        """Create a bar chart using manim."""
+        from manim import Scene, BarChart, Text, BLUE_D
 
-        Args:
-            categories: Category labels
-            values: Bar values
-            title: Plot title
-            xlabel: X-axis label
-            ylabel: Y-axis label
-            color: Bar color name (manim color string)
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
 
-        color_map = {
-            "blue": BLUE_D,
-            "red": RED,
-            "green": GREEN,
-            "yellow": YELLOW,
-            "steelblue": BLUE_D,
-        }
-        bar_color = color_map.get(color.lower(), BLUE_D)
+        bar_color = BLUE_D
 
         class BarScene(Scene):
             def construct(self_inner):
@@ -330,18 +201,7 @@ class Visualizer:
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
                 self_inner.add(title_text)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(BarScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(BarScene, save_path)
 
     @staticmethod
     def plot_histogram(
@@ -354,41 +214,20 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Create a histogram using manim.
+        """Create a histogram using manim."""
+        from manim import Scene, BarChart, Text, BLUE_D
 
-        Args:
-            data: Data to plot
-            bins: Number of bins
-            title: Plot title
-            xlabel: X-axis label
-            ylabel: Y-axis label
-            color: Bar color name
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
 
         counts, bin_edges = np.histogram(data, bins=bins)
-        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-
-        color_map = {
-            "skyblue": BLUE_D,
-            "blue": BLUE_D,
-            "red": RED,
-            "green": GREEN,
-            "yellow": YELLOW,
-        }
-        bar_color = color_map.get(color.lower(), BLUE_D)
+        bar_color = BLUE_D
 
         class HistogramScene(Scene):
             def construct(self_inner):
                 bar_chart = BarChart(
                     values=counts.tolist(),
-                    bar_names=[f"{c:.1f}" for c in bin_centers[:len(counts)]],
+                    bar_names=[f"{c:.1f}" for c in bin_edges[:len(counts)]],
                     y_range=[0, max(counts) * 1.2 if max(counts) > 0 else 1, max(counts) // 5 if max(counts) > 0 else 1],
                     y_axis_config={"include_numbers": True},
                     bar_colors=[bar_color] * len(counts),
@@ -398,18 +237,7 @@ class Visualizer:
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
                 self_inner.add(title_text)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(HistogramScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(HistogramScene, save_path)
 
     @staticmethod
     def plot_matrix(
@@ -419,18 +247,9 @@ class Visualizer:
         save_path: Optional[str] = None,
         language: str = "zh",
     ) -> ToolResult:
-        """Visualize a matrix as a heatmap using manim.
+        """Visualize a matrix as a heatmap using manim."""
+        from manim import Scene, Rectangle, MathTex, Text, VGroup, RED, BLUE, WHITE, BLACK
 
-        Args:
-            matrix: Matrix to visualize
-            title: Plot title
-            cmap: Colormap name (ignored in manim, uses default gradient)
-            save_path: Path to save the rendered file
-            language: Language for font configuration
-
-        Returns:
-            ToolResult with file path to rendered video/image
-        """
         configure_manim(language)
         font = get_manim_font(language)
 
@@ -449,7 +268,7 @@ class Visualizer:
                         val = matrix[i, j]
                         intensity = abs(val) / abs_max
 
-                        rect = ManimRect(
+                        rect = Rectangle(
                             width=cell_size,
                             height=cell_size * 0.6,
                             fill_opacity=min(intensity * 0.8 + 0.2, 1.0),
@@ -472,30 +291,11 @@ class Visualizer:
                 title_text = Text(title, font=font, font_size=28).to_edge(UP)
                 self_inner.add(title_text)
 
-        try:
-            output_dir = os.path.dirname(save_path) if save_path else None
-            path = _render_scene(MatrixScene, output_dir=output_dir)
-
-            if save_path:
-                import shutil
-                shutil.move(path, save_path)
-                return ToolResult.ok(data=save_path, metadata={"type": "file", "format": "mp4"})
-            else:
-                return ToolResult.ok(data=path, metadata={"type": "file", "format": "mp4"})
-        except Exception as e:
-            return ToolResult.fail(f"Visualization error: {e}")
+        return Visualizer._save_or_return(MatrixScene, save_path)
 
     @staticmethod
     def _save_or_return(scene_cls, save_path: Optional[str]) -> ToolResult:
-        """Render a manim Scene class and return ToolResult.
-
-        Args:
-            scene_cls: A manim Scene subclass
-            save_path: Path to save the render
-
-        Returns:
-            ToolResult with file path
-        """
+        """Render a manim Scene class and return ToolResult."""
         try:
             output_dir = os.path.dirname(save_path) if save_path else None
             path = _render_scene(scene_cls, output_dir=output_dir)

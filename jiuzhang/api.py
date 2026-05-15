@@ -19,6 +19,13 @@ from jiuzhang.research.counterexamples import CounterexampleFinder, ConjectureVe
 from jiuzhang.research.latex_generator import LaTeXPaperGenerator
 from jiuzhang.research.proof_assistant import ProofAssistant, Proof
 
+# Solver and Reasoning
+from jiuzhang.solver.method_registry import MethodRegistry
+from jiuzhang.solver.problem_classifier import ProblemClassifier
+from jiuzhang.solver.pipeline import SolverPipeline
+from jiuzhang.reasoning.hybrid_engine import HybridReasoningEngine
+from jiuzhang.reasoning.proof_generator import ProofGenerator, ProofStrategy
+
 
 class JiuZhangAPI:
     """Main API for JiuZhang.
@@ -38,6 +45,11 @@ class JiuZhangAPI:
         self._lesson_gen = None
         self._research_engine = None
         self._frontier = None
+        self._method_registry = None
+        self._problem_classifier = None
+        self._solver = None
+        self._reasoning_engine = None
+        self._proof_generator = None
         self.open_problems = OpenProblemsDB()
         self.counterexample_finder = CounterexampleFinder()
         self.latex_generator = LaTeXPaperGenerator()
@@ -473,3 +485,122 @@ class JiuZhangAPI:
         return self.latex_generator.generate_beamer_presentation(
             title, author, slides, output_path=output_path
         )
+
+    # === Solver & Reasoning ===
+
+    @property
+    def method_registry(self) -> MethodRegistry:
+        if self._method_registry is None:
+            self._method_registry = MethodRegistry()
+        return self._method_registry
+
+    @property
+    def problem_classifier(self) -> ProblemClassifier:
+        if self._problem_classifier is None:
+            self._problem_classifier = ProblemClassifier(self.method_registry)
+        return self._problem_classifier
+
+    @property
+    def solver(self) -> SolverPipeline:
+        if self._solver is None:
+            self._solver = SolverPipeline(self.method_registry, self.problem_classifier)
+        return self._solver
+
+    @property
+    def reasoning_engine(self) -> HybridReasoningEngine:
+        if self._reasoning_engine is None:
+            self._reasoning_engine = HybridReasoningEngine(self.config, self.method_registry)
+        return self._reasoning_engine
+
+    @property
+    def proof_generator(self) -> ProofGenerator:
+        if self._proof_generator is None:
+            self._proof_generator = ProofGenerator()
+        return self._proof_generator
+
+    def solve(self, problem: str, language: str = "zh"):
+        """Solve a mathematical problem with step-by-step solution.
+
+        Args:
+            problem: The problem statement
+            language: Output language
+
+        Returns:
+            SolveResult with complete solution trace
+        """
+        return self.solver.solve(problem, language)
+
+    def classify_problem(self, problem: str, language: str = "zh"):
+        """Classify a mathematical problem.
+
+        Args:
+            problem: The problem statement
+            language: Language code
+
+        Returns:
+            ProblemType classification
+        """
+        return self.problem_classifier.classify(problem, language)
+
+    def reason(self, problem: str, language: str = "zh", mode: str = "full"):
+        """Perform hybrid reasoning on a problem.
+
+        Args:
+            problem: The problem statement
+            language: Output language
+            mode: "symbolic", "llm", or "full"
+
+        Returns:
+            ReasoningResult with complete analysis
+        """
+        return self.reasoning_engine.reason(problem, language, mode)
+
+    def generate_proof(self, theorem: str, strategy=None, language: str = "zh"):
+        """Generate a structured mathematical proof.
+
+        Args:
+            theorem: The theorem to prove
+            strategy: Proof strategy (auto-detected if None)
+            language: Output language
+
+        Returns:
+            Proof object with steps and verification
+        """
+        return self.proof_generator.generate(theorem, strategy, language)
+
+    def list_methods(self, category: Optional[str] = None):
+        """List available mathematical methods.
+
+        Args:
+            category: Filter by category (optional)
+
+        Returns:
+            List of MathMethod objects
+        """
+        if category:
+            from jiuzhang.solver.method_registry import MethodCategory
+            cat = MethodCategory(category)
+            return self.method_registry.get_by_category(cat)
+        return self.method_registry.get_all()
+
+    def find_methods_for(self, problem: str):
+        """Find applicable methods for a problem.
+
+        Args:
+            problem: The problem statement
+
+        Returns:
+            List of (method, confidence_score) tuples
+        """
+        return self.method_registry.match_methods(problem)
+
+    def chain_methods_for(self, problem: str):
+        """Build optimal method chain for a problem.
+
+        Args:
+            problem: The problem statement
+
+        Returns:
+            List of MathMethod objects in execution order
+        """
+        return self.method_registry.chain_methods(problem)
