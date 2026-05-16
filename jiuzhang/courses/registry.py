@@ -50,6 +50,14 @@ from jiuzhang.courses.discrete import (
     get_discrete_kps,
     get_discrete_lesson,
 )
+from jiuzhang.courses.number_theory import (
+    get_number_theory_knowledge_points as get_number_theory_kps,
+    get_number_theory_lesson,
+)
+from jiuzhang.courses.diff_eq import (
+    get_diff_eq_knowledge_points as get_diff_eq_kps,
+    get_diff_eq_lesson,
+)
 
 
 class CourseRegistry:
@@ -81,6 +89,8 @@ class CourseRegistry:
             *get_linear_algebra_kps(),
             *get_advanced_kps(),
             *get_discrete_kps(),
+            *get_number_theory_kps(),
+            *get_diff_eq_kps(),
         ]
 
         self._lessons = [
@@ -97,6 +107,8 @@ class CourseRegistry:
             get_linear_algebra_lesson(),
             get_advanced_lesson(),
             get_discrete_lesson(),
+            get_number_theory_lesson(),
+            get_diff_eq_lesson(),
         ]
 
         # Build index for fast lookup

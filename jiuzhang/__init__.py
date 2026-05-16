@@ -75,6 +75,9 @@ from jiuzhang.reasoning.hybrid_engine import HybridReasoningEngine, ReasoningRes
 from jiuzhang.reasoning.proof_generator import ProofGenerator, Proof as GeneratedProof, ProofStep as GeneratedProofStep
 from jiuzhang.reasoning.method_chain import MethodChain, ChainResult
 
+# Assessment module
+from jiuzhang.assessment import AssessmentEngine, Difficulty, QuizConfig, Problem, ProblemType
+
 __all__ = [
     "__version__",
     "ToolResult",
@@ -130,4 +133,10 @@ __all__ = [
     "GeneratedProofStep",
     "MethodChain",
     "ChainResult",
+    # Assessment
+    "AssessmentEngine",
+    "Difficulty",
+    "QuizConfig",
+    "Problem",
+    "ProblemType",
 ]

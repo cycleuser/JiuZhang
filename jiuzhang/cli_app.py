@@ -35,6 +35,9 @@ from jiuzhang.visualization.tui_viz import (
 )
 from jiuzhang.learning_tracker import LearningTracker
 from jiuzhang.math_reasoning import MathReasoningEngine
+from jiuzhang.solver import MethodRegistry, ProblemClassifier, SolverPipeline
+from jiuzhang.reasoning import HybridReasoningEngine, ProofGenerator
+from jiuzhang.assessment import AssessmentEngine, Difficulty, QuizConfig
 
 
 console = Console()
@@ -63,6 +66,12 @@ class AppContext:
     _proof_assistant: Optional[ProofAssistant] = field(default=None, repr=False)
     _learning_tracker: Optional[LearningTracker] = field(default=None, repr=False)
     _math_reasoning: Optional[MathReasoningEngine] = field(default=None, repr=False)
+    _method_registry: Optional[MethodRegistry] = field(default=None, repr=False)
+    _problem_classifier: Optional[ProblemClassifier] = field(default=None, repr=False)
+    _solver: Optional[SolverPipeline] = field(default=None, repr=False)
+    _reasoning_engine: Optional[HybridReasoningEngine] = field(default=None, repr=False)
+    _proof_generator: Optional[ProofGenerator] = field(default=None, repr=False)
+    _assessment: Optional[AssessmentEngine] = field(default=None, repr=False)
 
     @property
     def client(self) -> MultiProviderClient:
@@ -135,6 +144,42 @@ class AppContext:
         if self._math_reasoning is None:
             self._math_reasoning = MathReasoningEngine(self.client, self.config)
         return self._math_reasoning
+
+    @property
+    def method_registry(self) -> MethodRegistry:
+        if self._method_registry is None:
+            self._method_registry = MethodRegistry()
+        return self._method_registry
+
+    @property
+    def problem_classifier(self) -> ProblemClassifier:
+        if self._problem_classifier is None:
+            self._problem_classifier = ProblemClassifier(self.method_registry)
+        return self._problem_classifier
+
+    @property
+    def solver(self) -> SolverPipeline:
+        if self._solver is None:
+            self._solver = SolverPipeline(self.method_registry, self.problem_classifier)
+        return self._solver
+
+    @property
+    def reasoning_engine(self) -> HybridReasoningEngine:
+        if self._reasoning_engine is None:
+            self._reasoning_engine = HybridReasoningEngine(self.config, self.method_registry)
+        return self._reasoning_engine
+
+    @property
+    def proof_generator(self) -> ProofGenerator:
+        if self._proof_generator is None:
+            self._proof_generator = ProofGenerator()
+        return self._proof_generator
+
+    @property
+    def assessment(self) -> AssessmentEngine:
+        if self._assessment is None:
+            self._assessment = AssessmentEngine()
+        return self._assessment
 
 
 def main(args: Optional[list] = None):
@@ -211,6 +256,22 @@ def main(args: Optional[list] = None):
         cmd_distill(ctx)
     elif command == "low_vram":
         cmd_low_vram_train(ctx)
+    elif command == "solve":
+        problem = " ".join(args) if args else "x^2 - 5x + 6 = 0"
+        cmd_solve(problem, ctx)
+    elif command == "classify":
+        problem = " ".join(args) if args else "解方程 x^2 - 5x + 6 = 0"
+        cmd_classify(problem, ctx)
+    elif command == "reason":
+        problem = " ".join(args) if args else "证明根号2是无理数"
+        cmd_reason(problem, ctx)
+    elif command == "methods":
+        cmd_methods(ctx, " ".join(args) if args else "")
+    elif command == "quiz":
+        cmd_quiz(ctx, " ".join(args) if args else "")
+    elif command == "proof_gen":
+        theorem = " ".join(args) if args else "勾股定理"
+        cmd_proof_gen(theorem, ctx)
     else:
         console.print(f"[red]{ctx.i18n.t('unknown_command')}: {command}[/red]")
         console.print(
@@ -381,6 +442,163 @@ def repl_loop(ctx: AppContext):
             cmd_learn(user_input, ctx)
 
 
+def cmd_solve(problem: str, ctx: AppContext):
+    """Solve a math problem using the solver pipeline."""
+    console.print(f"\n[bold blue]🧮 Solving: {problem}[/bold blue]\n")
+
+    with console.status("[bold green]Classifying and solving...", spinner="dots"):
+        result = ctx.solver.solve(problem)
+
+    console.print(f"[bold]Classification:[/bold] {result.problem_type}")
+    console.print(f"[bold]Complexity:[/bold] {result.complexity}")
+    console.print(f"[bold]Method Chain:[/bold] {' → '.join(m.name for m in result.method_chain) if result.method_chain else 'None'}")
+
+    if result.steps:
+        console.print(f"\n[bold]Solution Steps:[/bold]")
+        for i, step in enumerate(result.steps, 1):
+            console.print(f"  {i}. {step}")
+
+    if result.answer:
+        console.print(f"\n[bold green]Answer: {result.answer}[/bold green]")
+    elif result.symbolic_result:
+        console.print(f"\n[bold green]Result: {result.symbolic_result}[/bold green]")
+
+
+def cmd_classify(problem: str, ctx: AppContext):
+    """Classify a math problem."""
+    console.print(f"\n[bold blue]🔍 Classifying: {problem}[/bold blue]\n")
+
+    result = ctx.problem_classifier.classify(problem)
+
+    table = Table(title="Problem Classification")
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_row("Domain", result.domain)
+    table.add_row("Problem Type", str(result.problem_type))
+    table.add_row("Difficulty", result.difficulty)
+    table.add_row("Confidence", f"{result.confidence:.2f}")
+    if result.keywords:
+        table.add_row("Keywords", ", ".join(result.keywords))
+    if result.suggested_methods:
+        table.add_row("Suggested Methods", ", ".join(result.suggested_methods))
+    console.print(table)
+
+
+def cmd_reason(problem: str, ctx: AppContext):
+    """Hybrid reasoning on a problem."""
+    console.print(f"\n[bold blue]🧠 Reasoning: {problem}[/bold blue]\n")
+
+    with console.status("[bold green]Performing hybrid reasoning...", spinner="dots"):
+        result = ctx.reasoning_engine.reason(problem)
+
+    console.print(f"[bold]Mode:[/bold] {result.mode}")
+    console.print(f"[bold]Confidence:[/bold] {result.confidence:.2f}")
+
+    if result.symbolic_result:
+        console.print(f"\n[bold]Symbolic Result:[/bold] {result.symbolic_result}")
+    if result.llm_analysis:
+        console.print(Markdown(result.llm_analysis))
+    if result.verification:
+        console.print(f"\n[bold]Verification:[/bold] {result.verification}")
+    if result.steps:
+        console.print(f"\n[bold]Reasoning Steps:[/bold]")
+        for i, step in enumerate(result.steps, 1):
+            console.print(f"  {i}. {step}")
+
+
+def cmd_methods(ctx: AppContext, category: str):
+    """List available mathematical methods."""
+    if category:
+        methods = ctx.method_registry.get_by_category(category)
+        console.print(f"\n[bold blue]📐 Methods in '{category}':[/bold blue]\n")
+    else:
+        methods = ctx.method_registry.get_all()
+        console.print(f"\n[bold blue]📐 All Available Methods ({len(methods)}):[/bold blue]\n")
+
+    table = Table()
+    table.add_column("ID", style="cyan", max_width=30)
+    table.add_column("Name", style="green")
+    table.add_column("Category", style="yellow")
+    table.add_column("Level", style="magenta")
+
+    for m in methods[:50]:
+        table.add_row(m.id, m.name, m.category.value, m.level)
+
+    console.print(table)
+    if len(methods) > 50:
+        console.print(f"\n[dim]... and {len(methods) - 50} more methods[/dim]")
+
+
+def cmd_quiz(ctx: AppContext, category: str):
+    """Take a quiz."""
+    console.print(f"\n[bold blue]📝 JiuZhang Quiz[/bold blue]\n")
+
+    config = QuizConfig(
+        category=category,
+        difficulty=Difficulty.MEDIUM,
+        num_problems=10,
+    )
+
+    quiz = ctx.assessment.generate_quiz(config)
+
+    if not quiz["problems"]:
+        console.print("[red]No problems found for this category.[/red]")
+        console.print(f"Available categories: arithmetic, algebra, geometry, probability, calculus, linear_algebra, number_theory, diff_eq, discrete")
+        return
+
+    console.print(f"Quiz ID: {quiz['quiz_id']}")
+    console.print(f"Problems: {quiz['total_problems']}")
+    console.print(f"Time Limit: {quiz['config']['time_limit_minutes']} min\n")
+
+    answers = {}
+    for p in quiz["problems"]:
+        q = p["question_cn"] if ctx.i18n.get_language() == "zh" else p["question"]
+        console.print(f"[bold]{p['id']}[/bold] ({p['difficulty']}, {p['type']}): {q}")
+        if p.get("options_cn") and ctx.i18n.get_language() == "zh":
+            for i, opt in enumerate(p["options_cn"]):
+                console.print(f"  {chr(65+i)}) {opt}")
+        elif p.get("options"):
+            for i, opt in enumerate(p["options"]):
+                console.print(f"  {chr(65+i)}) {opt}")
+
+        answer = Prompt.ask("Your answer", default="")
+        if answer:
+            answers[p["id"]] = answer
+        console.print()
+
+    report = ctx.assessment.submit_quiz(quiz["quiz_id"], answers)
+
+    console.print(f"\n[bold]Quiz Results[/bold]")
+    console.print(f"Correct: {report['correct']}/{report['total_problems']}")
+    console.print(f"Score: {report['percentage']:.1f}%\n")
+
+    for r in report["results"]:
+        icon = "✅" if r["correct"] else "❌"
+        fb = r.get("feedback_cn", r["feedback"]) if ctx.i18n.get_language() == "zh" else r["feedback"]
+        console.print(f"  {icon} {r['problem_id']}: {fb}")
+
+
+def cmd_proof_gen(theorem: str, ctx: AppContext):
+    """Generate a structured proof."""
+    console.print(f"\n[bold blue]📜 Generating proof: {theorem}[/bold blue]\n")
+
+    with console.status("[bold green]Generating proof...", spinner="dots"):
+        proof = ctx.proof_generator.generate(theorem)
+
+    console.print(f"[bold]Strategy:[/bold] {proof.strategy.value if hasattr(proof.strategy, 'value') else proof.strategy}")
+    console.print(f"[bold]Theorem:[/bold] {proof.theorem}")
+
+    if proof.steps:
+        console.print(f"\n[bold]Proof Steps:[/bold]")
+        for i, step in enumerate(proof.steps, 1):
+            console.print(f"  {i}. [{step.type.value if hasattr(step.type, 'value') else step.type}] {step.statement}")
+            if step.justification:
+                console.print(f"     Justification: {step.justification}")
+
+    if proof.conclusion:
+        console.print(f"\n[bold green]QED: {proof.conclusion}[/bold green]")
+
+
 def show_help(ctx: AppContext):
     """Show available commands."""
     t = ctx.i18n.t
@@ -414,6 +632,12 @@ def show_help(ctx: AppContext):
     table.add_row("fraction <n/d>", t("fraction"))
     table.add_row("lang <code>", t("language"))
     table.add_row("config", t("config"))
+    table.add_row("solve <problem>", "Solver pipeline: classify + solve")
+    table.add_row("classify <problem>", "Classify problem type and difficulty")
+    table.add_row("reason <problem>", "Hybrid symbolic + LLM reasoning")
+    table.add_row("methods [category]", "List available mathematical methods")
+    table.add_row("quiz [category]", "Take an interactive quiz")
+    table.add_row("proof_gen <theorem>", "Generate structured proof")
     table.add_row("help", t("help"))
     table.add_row("quit", t("quit"))
 

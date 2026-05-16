@@ -220,3 +220,4 @@ archive/old-training-logs/
 
 # 训练指标日志
 metrics.jsonl
+/pdf

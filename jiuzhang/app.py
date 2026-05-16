@@ -13,6 +13,9 @@ from jiuzhang.i18n import I18n, SUPPORTED_LANGUAGES
 from jiuzhang.research.engine import ResearchEngine
 from jiuzhang.learning_tracker import LearningTracker
 from jiuzhang.math_reasoning import MathReasoningEngine
+from jiuzhang.solver import MethodRegistry, ProblemClassifier, SolverPipeline
+from jiuzhang.reasoning import HybridReasoningEngine, ProofGenerator
+from jiuzhang.assessment import AssessmentEngine, Difficulty, QuizConfig
 
 
 def _validate_input(data, schema):
@@ -151,6 +154,12 @@ def create_app(config: Config = None):
     i18n = I18n(default_language=cfg.language)
     research_engine = ResearchEngine(cfg)
     math_reasoning = MathReasoningEngine(client, cfg)
+    method_registry = MethodRegistry()
+    problem_classifier = ProblemClassifier(method_registry)
+    solver = SolverPipeline(method_registry, problem_classifier)
+    reasoning_engine = HybridReasoningEngine(cfg, method_registry)
+    proof_generator = ProofGenerator()
+    assessment = AssessmentEngine()
 
     @app.before_request
     def set_language():
@@ -791,6 +800,204 @@ def create_app(config: Config = None):
             "self_consistent": result.self_consistent,
             "error": result.error
         })
+
+    # Solver / Reasoning / Assessment endpoints
+    @app.route("/api/solve", methods=["POST"])
+    def api_solve():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        schema = {
+            "problem": (_safe_str, True, ""),
+            "language": (_validate_language, False, "zh"),
+        }
+        validated, error = _validate_input(data, schema)
+        if error:
+            return jsonify({"success": False, "error": error}), 400
+
+        result = solver.solve(validated["problem"], validated["language"])
+        return jsonify({
+            "success": True,
+            "problem_type": result.problem_type,
+            "complexity": result.complexity,
+            "answer": result.answer,
+            "symbolic_result": str(result.symbolic_result) if result.symbolic_result else None,
+            "steps": result.steps,
+            "method_chain": [m.name for m in result.method_chain] if result.method_chain else [],
+            "execution_time": result.execution_time,
+        })
+
+    @app.route("/api/classify", methods=["POST"])
+    def api_classify():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        schema = {
+            "problem": (_safe_str, True, ""),
+            "language": (_validate_language, False, "zh"),
+        }
+        validated, error = _validate_input(data, schema)
+        if error:
+            return jsonify({"success": False, "error": error}), 400
+
+        result = problem_classifier.classify(validated["problem"], validated["language"])
+        return jsonify({
+            "success": True,
+            "domain": result.domain,
+            "problem_type": str(result.problem_type),
+            "difficulty": result.difficulty,
+            "confidence": result.confidence,
+            "keywords": result.keywords,
+            "suggested_methods": result.suggested_methods,
+        })
+
+    @app.route("/api/reason", methods=["POST"])
+    def api_reason():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        schema = {
+            "problem": (_safe_str, True, ""),
+            "language": (_validate_language, False, "zh"),
+            "mode": (lambda x: x if x in ["symbolic", "llm", "full"] else "full", False, "full"),
+        }
+        validated, error = _validate_input(data, schema)
+        if error:
+            return jsonify({"success": False, "error": error}), 400
+
+        result = reasoning_engine.reason(validated["problem"], validated["language"], validated["mode"])
+        return jsonify({
+            "success": True,
+            "mode": result.mode,
+            "confidence": result.confidence,
+            "symbolic_result": str(result.symbolic_result) if result.symbolic_result else None,
+            "llm_analysis": result.llm_analysis,
+            "verification": result.verification,
+            "steps": result.steps,
+        })
+
+    @app.route("/api/methods", methods=["GET"])
+    def api_methods():
+        category = request.args.get("category", "")
+        if category:
+            methods = method_registry.get_by_category(category)
+        else:
+            methods = method_registry.get_all()
+
+        return jsonify({
+            "success": True,
+            "methods": [
+                {
+                    "id": m.id,
+                    "name": m.name,
+                    "category": m.category.value,
+                    "level": m.level,
+                    "description": m.description,
+                }
+                for m in methods
+            ],
+            "total": len(methods),
+        })
+
+    @app.route("/api/methods/match", methods=["POST"])
+    def api_methods_match():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        problem = data.get("problem", "")
+        if not problem:
+            return jsonify({"success": False, "error": "Problem is required"}), 400
+
+        matches = method_registry.match_methods(problem)
+        return jsonify({
+            "success": True,
+            "matches": [
+                {"method": m.name, "category": m.category.value, "score": float(s)}
+                for m, s in matches
+            ],
+        })
+
+    @app.route("/api/methods/chain", methods=["POST"])
+    def api_methods_chain():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        problem = data.get("problem", "")
+        if not problem:
+            return jsonify({"success": False, "error": "Problem is required"}), 400
+
+        chain = method_registry.chain_methods(problem)
+        return jsonify({
+            "success": True,
+            "chain": [
+                {"id": m.id, "name": m.name, "category": m.category.value}
+                for m in chain
+            ],
+        })
+
+    @app.route("/api/proof/generate", methods=["POST"])
+    def api_proof_generate():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        schema = {
+            "theorem": (_safe_str, True, ""),
+            "language": (_validate_language, False, "zh"),
+        }
+        validated, error = _validate_input(data, schema)
+        if error:
+            return jsonify({"success": False, "error": error}), 400
+
+        proof = proof_generator.generate(validated["theorem"], language=validated["language"])
+        return jsonify({
+            "success": True,
+            "theorem": proof.theorem,
+            "strategy": proof.strategy.value if hasattr(proof.strategy, "value") else str(proof.strategy),
+            "steps": [
+                {
+                    "type": step.type.value if hasattr(step.type, "value") else str(step.type),
+                    "statement": step.statement,
+                    "justification": step.justification,
+                }
+                for step in (proof.steps or [])
+            ],
+            "conclusion": proof.conclusion,
+        })
+
+    @app.route("/api/quiz/generate", methods=["POST"])
+    def api_quiz_generate():
+        data = request.json
+        if not isinstance(data, dict):
+            data = {}
+
+        config = QuizConfig(
+            category=data.get("category", ""),
+            difficulty=Difficulty(data.get("difficulty", "medium")),
+            num_problems=data.get("num_problems", 10),
+        )
+
+        quiz = assessment.generate_quiz(config)
+        return jsonify({"success": True, "quiz": quiz})
+
+    @app.route("/api/quiz/submit", methods=["POST"])
+    def api_quiz_submit():
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"success": False, "error": "Request body must be JSON object"}), 400
+
+        quiz_id = data.get("quiz_id", "")
+        answers = data.get("answers", {})
+        if not isinstance(answers, dict):
+            return jsonify({"success": False, "error": "Answers must be a dict"}), 400
+
+        report = assessment.submit_quiz(quiz_id, answers)
+        return jsonify({"success": True, "report": report})
 
     return app
 
