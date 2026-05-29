@@ -1,0 +1,65 @@
+* Uses proxy env variable no_proxy == 'localhost,127.0.0.1,::1'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host export.arxiv.org:443 was resolved.
+* IPv6: (none)
+* IPv4: 199.232.163.42
+*   Trying 199.232.163.42:443...
+* Connected to export.arxiv.org (199.232.163.42) port 443
+* ALPN: curl offers h2,http/1.1
+* (304) (OUT), TLS handshake, Client hello (1):
+} [321 bytes data]
+*  CAfile: /etc/ssl/cert.pem
+*  CApath: none
+* (304) (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* (304) (IN), TLS handshake, Unknown (8):
+{ [19 bytes data]
+* (304) (IN), TLS handshake, Certificate (11):
+{ [2517 bytes data]
+* (304) (IN), TLS handshake, CERT verify (15):
+{ [264 bytes data]
+* (304) (IN), TLS handshake, Finished (20):
+{ [36 bytes data]
+* (304) (OUT), TLS handshake, Finished (20):
+} [36 bytes data]
+* SSL connection using TLSv1.3 / AEAD-CHACHA20-POLY1305-SHA256 / [blank] / UNDEF
+* ALPN: server accepted h2
+* Server certificate:
+*  subject: CN=arxiv.org
+*  start date: May 18 07:16:53 2026 GMT
+*  expire date: Jun 17 07:16:52 2026 GMT
+*  subjectAltName: host "export.arxiv.org" matched cert's "*.arxiv.org"
+*  issuer: C=US; O=Certainly; CN=Certainly Intermediate R1
+*  SSL certificate verify ok.
+* using HTTP/2
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* [HTTP/2] [1] OPENED stream for https://export.arxiv.org/api/query?search_query=all:Goldbach+Helfgott&max_results=1
+* [HTTP/2] [1] [:method: GET]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: export.arxiv.org]
+* [HTTP/2] [1] [:path: /api/query?search_query=all:Goldbach+Helfgott&max_results=1]
+* [HTTP/2] [1] [user-agent: curl/8.7.1]
+* [HTTP/2] [1] [accept: */*]
+> GET /api/query?search_query=all:Goldbach+Helfgott&max_results=1 HTTP/2
+> Host: export.arxiv.org
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/2 429 
+< via: 1.1 varnish, 1.1 varnish, 1.1 varnish
+< x-cloud-trace-context: 18856f9f97b19f1c1c963dc736d6f4c5
+< server: Google Frontend
+< accept-ranges: bytes
+< content-type: text/html
+< date: Fri, 29 May 2026 03:09:34 GMT
+< x-served-by: cache-lga21989-LGA, cache-lga21989-LGA, cache-lga21959-LGA, cache-nrt-rjaa8190074-NRT
+< x-cache: MISS, MISS, MISS
+< x-cache-hits: 0, 0, 0
+< x-timer: S1780024175.660024,VS0,VE233
+< strict-transport-security: max-age=300
+< content-length: 14
+< 
+  0    14    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0{ [14 bytes data]
+100    14  100    14    0     0      5      0  0:00:02  0:00:02 --:--:--     5100    14  100    14    0     0      5      0  0:00:02  0:00:02 --:--:--     5
+* Connection #0 to host export.arxiv.org left intact
