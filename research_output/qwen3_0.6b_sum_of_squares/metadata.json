@@ -1,0 +1,15 @@
+{
+  "theorem": "$\\displaystyle\\sum_{i=1}^n i^2 = \\frac{n(n+1)(2n+1)}{6}$",
+  "model": "qwen3:0.6b",
+  "sympy_verified": true,
+  "induction_verified": true,
+  "telescope_verified": true,
+  "cubes_verified": true,
+  "numeric_errors": 0,
+  "quality_score": 0.83,
+  "quality_verdict": "warn",
+  "llm_calls": 3,
+  "total_tokens": 1746,
+  "methods_agree": true,
+  "generated_at": "2026-06-07T14:48:01.042351"
+}

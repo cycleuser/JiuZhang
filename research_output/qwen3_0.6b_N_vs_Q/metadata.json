@@ -1,0 +1,17 @@
+{
+  "theorem": "|N| = |Q|",
+  "description": "自然数和有理数一样多 (equal cardinality, both countably infinite)",
+  "model": "qwen3:0.6b",
+  "verification": {
+    "injective_up_to_10000": true,
+    "roundtrip_up_to_5000": true,
+    "cbs_injection_ok": true,
+    "calkin_wilf_ok": true,
+    "methods_agree": true
+  },
+  "quality_score": 0.8200000000000001,
+  "quality_verdict": "pass",
+  "llm_calls": 4,
+  "total_tokens": 3125,
+  "generated_at": "2026-06-07T16:53:20.974942"
+}

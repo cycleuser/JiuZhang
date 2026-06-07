@@ -12,7 +12,7 @@ import torch
 
 MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
 DATA_PATH = "jiuzhang_distilled.jsonl"
-OUTPUT_DIR = "/private/var/folders/h0/64ycsy616rbb9rsm15zj4tpm0000gn/T/pytest-of-fred/pytest-0/test_generate_training_script_1/model"
+OUTPUT_DIR = "/private/var/folders/h0/64ycsy616rbb9rsm15zj4tpm0000gn/T/pytest-of-fred/pytest-39/test_generate_training_script_1/model"
 MAX_SEQ_LENGTH = 2048
 BATCH_SIZE = 4
 GRADIENT_ACCUMULATION = 8

@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "id": "7d6117ad-68d",
+      "question": "Prove: |ℕ| = |ℚ|",
+      "hypothesis": "|ℕ| = |ℚ| via Cantor diagonal enumeration",
+      "proof": "To prove that the cardinality of the natural numbers $ \\mathbb{N} $ is equal to the cardinality of the rational numbers $ \\mathbb{Q} $, we will use **Cantor's diagonalization method** and **Cantor-Bernstein-Schröder** theorem.\n\n---\n\n### **Step 1: Enumerate all positive rationals $ \\mathbb{Q}^+ $**\n\nWe can use **Cantor's diagonalization** to construct an explicit enumeration of $ \\mathbb{Q}^+ $:\n\n- Arrange all fractions $ \\frac{p}{q} $ in a grid, where $ p = \\text{numerator}, q = \\text{denominato",
+      "outcome": "success",
+      "strength": 0.8200000000000001,
+      "category": "general",
+      "difficulty": "elementary",
+      "timestamp": "2026-06-07T16:53:03.937371"
+    }
+  ],
+  "total_experiments": 1,
+  "total_verified": 1,
+  "total_tokens": 1714,
+  "flywheel_rounds": 0,
+  "capability_frontier": {
+    "mastered": [
+      "general"
+    ],
+    "struggling": {},
+    "level": "research"
+  }
+}
