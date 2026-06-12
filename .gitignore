@@ -222,3 +222,4 @@ archive/old-training-logs/
 metrics.jsonl
 /pdf
 /problems
+/.codegraph
