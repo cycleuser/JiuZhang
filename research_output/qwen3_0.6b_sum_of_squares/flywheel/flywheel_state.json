@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "id": "288b29e0-3ff",
+      "question": "Prove: sum i^2 = n(n+1)(2n+1)/6",
+      "hypothesis": "sum_{i=1}^n i^2 = n(n+1)(2n+1)/6",
+      "proof": "We are given the identity:\n\n$$\n\\sum_{i=1}^n i^2 = \\frac{n(n+1)(2n+1)}{6}\n$$\n\nWe will prove this using **Mathematical Induction**.\n\n---\n\n### **1. Base Case: $ n = 1 $**\n\n$$\n\\sum_{i=1}^1 i^2 = 1^2 = 1\n$$\n\n$$\n\\frac{1(1+1)(2(1)+1)}{6} = \\frac{1 \\cdot 2 \\cdot 3}{6} = \\frac{6}{6} = 1\n$$\n\nSo the base case holds.\n\n---\n\n### **2. Induction Hypothesis: Assume true for $ n = k $**\n\nWe assume that:\n\n$$\n\\sum_{i=1}^k i^2 = \\frac{k(k+1)(2k+1)}{6}\n$$\n\n---\n\n### **3. Induction Step: Prove for $ n = k+1 $**\n\nWe now",
+      "outcome": "success",
+      "strength": 0.83,
+      "category": "general",
+      "difficulty": "elementary",
+      "timestamp": "2026-06-07T14:47:58.379396"
+    }
+  ],
+  "total_experiments": 1,
+  "total_verified": 1,
+  "total_tokens": 1388,
+  "flywheel_rounds": 0,
+  "capability_frontier": {
+    "mastered": [
+      "general"
+    ],
+    "struggling": {},
+    "level": "research"
+  }
+}
